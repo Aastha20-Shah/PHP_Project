@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>KeyVault | Premium Digital Vault</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --primary: #5e35b1;
+            --primary-light: #7e57c2;
+            --secondary: #00e5ff;
+            --accent: #ff4081;
+            --dark: #0f1021;
+            --darker: #090a15;
+            --light: #f0f4ff;
+            --success: #76ff03;
+            --warning: #ffd740;
+            --danger: #ff5252;
+            --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            --card-radius: 24px;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: var(--darker);
+            color: var(--light);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        #particles-js { position: fixed; width: 100%; height: 100%; z-index: -1; }
+
+        .container { width: 90%; max-width: 1400px; margin: 0 auto; padding: 0 20px; }
+
+        .navbar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 30px 0; position: relative; z-index: 100;
+        }
+
+        .logo {
+            display: flex; align-items: center; gap: 12px; font-size: 2rem; font-weight: 700;
+            color: white; text-decoration: none; transition: var(--transition);
+            background: linear-gradient(45deg, var(--secondary), var(--primary-light));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .logo:hover { transform: scale(1.03); }
+        .logo i { color: var(--secondary); animation: pulse 2s infinite; }
+
+        .nav-links { display: flex; gap: 40px; }
+        .nav-links a {
+            color: rgba(255,255,255,0.8); text-decoration: none; font-weight: 500;
+            transition: var(--transition); position: relative; padding: 8px 0;
+        }
+        .nav-links a:hover { color: var(--secondary); }
+        .nav-links a::after {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 2px; background: var(--secondary);
+            transition: var(--transition);
+        }
+        .nav-links a:hover::after { width: 100%; }
+
+        .hero { padding: 60px 0 150px; position: relative; overflow: hidden; }
+        .hero-content { display: flex; align-items: center; gap: 80px; }
+        .hero-text { flex: 1; animation: fadeInUp 1s ease-out; }
+        .hero-image { flex: 1; display: flex; justify-content: center; perspective: 1000px; }
+        .hero-image-inner {
+            transform-style: preserve-3d; transform: rotateY(-10deg) rotateX(5deg);
+            transition: transform 0.6s ease; animation: float 6s ease-in-out infinite;
+        }
+        .hero-image-inner:hover { transform: rotateY(0deg) rotateX(0deg); }
+
+        .hero h1 {
+            font-size: 4rem; font-weight: 800; line-height: 1.1; margin-bottom: 25px;
+            background: linear-gradient(to right, #ffffff, var(--secondary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .hero p {
+            font-size: 1.3rem; color: rgba(255,255,255,0.8); margin-bottom: 30px; max-width: 700px;
+        }
+
+        .hero-buttons { display: flex; gap: 25px; }
+
+        .btn {
+            padding: 14px 32px; border-radius: 50px; font-weight: 600; text-decoration: none;
+            display: inline-block; transition: var(--transition); border: none; cursor: pointer;
+            font-size: 1.05rem; text-align: center; position: relative; overflow: hidden; z-index: 1;
+        }
+        .btn:before {
+            content: ''; position: absolute; top: 0; left: 0; width: 0%; height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--primary-light)); transition: var(--transition); z-index: -1;
+        }
+        .btn:hover:before { width: 100%; }
+
+        .btn-primary { background: linear-gradient(90deg, var(--primary), var(--primary-light)); color: white; box-shadow: 0 5px 25px rgba(94,53,177,0.4); }
+        .btn-primary:hover { transform: translateY(-5px); box-shadow: 0 10px 35px rgba(94,53,177,0.6); }
+        .btn-outline { background: transparent; color: var(--secondary); border: 2px solid var(--secondary); }
+        .btn-outline:hover { color: white; transform: translateY(-5px); box-shadow: 0 5px 25px rgba(0,229,255,0.3); }
+
+        .features-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 35px; margin-top: 80px;
+        }
+        .feature-card {
+            background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--card-radius);
+            padding: 40px 30px; transition: var(--transition); backdrop-filter: blur(12px);
+            transform: translateY(0); box-shadow: 0 15px 35px rgba(0,0,0,0.2); position: relative; overflow: hidden;
+        }
+        .feature-card:before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px;
+            background: linear-gradient(90deg, var(--secondary), var(--primary-light)); transform: scaleX(0);
+            transform-origin: left; transition: transform 0.6s ease;
+        }
+        .feature-card:hover { transform: translateY(-15px); border-color: rgba(0,229,255,0.3); box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+        .feature-card:hover:before { transform: scaleX(1); }
+        .feature-card i { font-size: 3.5rem; margin-bottom: 25px; background: linear-gradient(45deg, var(--secondary), var(--primary-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .feature-card h3 { font-size: 1.6rem; margin-bottom: 20px; color: white; }
+        .feature-card p { font-size: 1.1rem; color: rgba(255,255,255,0.7); }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(60px); } to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); } 50% { transform: translateY(-25px); } 100% { transform: translateY(0px); }
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        @media (max-width: 1200px) {
+            .hero-content { flex-direction: column; text-align: center; }
+            .hero-text { display:flex; flex-direction:column; align-items:center; }
+            .hero-buttons { justify-content:center; }
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .navbar { flex-direction: column; gap: 25px; }
+            .nav-links { gap: 20px; flex-wrap: wrap; justify-content: center; }
+            .features-grid { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 3rem; }
+            .hero p { font-size: 1.1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div id="particles-js"></div>
+
+    <section id="home-page">
+        <div class="container">
+            <nav class="navbar">
+                <a href="index.html" class="logo">
+                    <i class="fas fa-vault"></i>
+                    KeyVault
+                </a>
+
+                <div class="nav-links">
+                    <a href="index.html">Home</a>
+                    <a href="#features">Features</a>
+                    <a href="security.html">Security</a>
+                    <a href="contactus.html">Contact</a>
+                </div>
+                <!-- auth buttons moved into hero area per request -->
+            </nav>
+
+            <div class="hero">
+                <div class="hero-content">
+                    <div class="hero-text">
+                        <h1>Your Ultimate Digital Security Vault</h1>
+                        <p>Protect your passwords, private photos, videos, and sensitive documents with military-grade encryption and zero-knowledge architecture.</p>
+
+                        <!-- Login / Get Started moved here -->
+                        <div class="hero-buttons">
+                            <a href="login.html" class="btn btn-outline">Login</a>
+                            <a href="register.html" class="btn btn-primary">Get Started</a>
+                        </div>
+                    </div>
+
+                    <div class="hero-image">
+                        <div class="hero-image-inner">
+                            <img src="https://cdn-icons-png.flaticon.com/512/3063/3063817.png" alt="Secure Vault" width="550" />
+                        </div>
+                    </div>
+                </div>
+
+                <div id="features" class="features-grid" style="margin-top:48px;">
+                    <div class="feature-card">
+                        <i class="fas fa-lock"></i>
+                        <h3>Military-Grade Encryption</h3>
+                        <p>AES-256 encryption with zero-knowledge architecture ensures your data remains private and secure.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <i class="fas fa-photo-video"></i>
+                        <h3>Secure Media Storage</h3>
+                        <p>Store private photos, videos, and documents with automatic encryption and metadata stripping.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <i class="fas fa-sync-alt"></i>
+                        <h3>Smart Password Rotation</h3>
+                        <p>Automatically update outdated passwords with one click for enhanced security.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        particlesJS("particles-js", {
+            particles: {
+                number: { value: 80, density: { enable: true, value_area: 800 } },
+                color: { value: "#5e35b1" },
+                shape: { type: "circle" },
+                opacity: { value: 0.3, random: true },
+                size: { value: 3, random: true },
+                line_linked: {
+                    enable: true,
+                    distance: 150,
+                    color: "#5e35b1",
+                    opacity: 0.1,
+                    width: 1
+                },
+                move: {
+                    enable: true,
+                    speed: 2,
+                    direction: "none",
+                    random: true,
+                    straight: false,
+                    out_mode: "out",
+                    bounce: false
+                }
+            },
+            interactivity: {
+                detect_on: "canvas",
+                events: {
+                    onhover: { enable: true, mode: "repulse" },
+                    onclick: { enable: true, mode: "push" },
+                    resize: true
+                }
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.password-toggle').forEach(toggle => {
+                toggle.addEventListener('click', function() {
+                    const passwordField = this.previousElementSibling;
+                    const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordField.setAttribute('type', type);
+                    this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

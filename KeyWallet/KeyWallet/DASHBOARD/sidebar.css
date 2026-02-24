@@ -1,0 +1,200 @@
+/* ===== VARIABLES ===== */
+:root {
+    --sidebar-bg: #1a1d2b;
+    --sidebar-accent: #5d78ff;
+    --sidebar-hover: #232838;
+    --sidebar-text: #e0e0ff;
+    --sidebar-icon: #8c94b3;
+    --transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* ===== GENERAL ===== */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+    width: 280px;
+    background: var(--sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    box-shadow: 0 0 40px rgba(0,0,0,0.25);
+    transition: var(--transition);
+    z-index: 100;
+}
+
+/* ===== LOGO ===== */
+.logo-section {
+    padding: 28px 28px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.logo-icon {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, var(--sidebar-accent), #7989ff);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 22px;
+    box-shadow: 0 5px 15px rgba(93,120,255,0.3);
+}
+
+.logo-text {
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: -0.5px;
+}
+
+.logo-text span {
+    color: var(--sidebar-accent);
+}
+
+/* ===== NAVIGATION ===== */
+.nav-section {
+    padding: 30px 0;
+    flex: 1;
+}
+
+.nav-title {
+    padding: 0 28px 16px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--sidebar-icon);
+    font-weight: 600;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 28px;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    transition: var(--transition);
+    font-weight: 500;
+    position: relative;
+    opacity: 0.9;
+}
+
+.nav-item i {
+    width: 24px;
+    text-align: center;
+    font-size: 18px;
+    color: var(--sidebar-icon);
+    transition: var(--transition);
+}
+
+.nav-item:hover {
+    background: var(--sidebar-hover);
+    opacity: 1;
+    transform: translateX(5px);
+}
+
+.nav-item:hover i {
+    color: var(--sidebar-accent);
+    transform: scale(1.1);
+}
+
+.nav-item.active {
+    background: rgba(93, 120, 255, 0.12);
+    opacity: 1;
+    border-left: 4px solid var(--sidebar-accent);
+}
+
+.nav-item.active i {
+    color: var(--sidebar-accent);
+}
+
+.badge {
+    background: var(--sidebar-accent);
+    color: white;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-weight: 600;
+    margin-left: auto;
+}
+
+/* ===== USER SECTION ===== */
+.user-section {
+    padding: 20px 28px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.user-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #7989ff, var(--sidebar-accent));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 18px;
+    box-shadow: 0 5px 15px rgba(93,120,255,0.25);
+}
+
+.user-info {
+    flex: 1;
+}
+
+.user-name {
+    color: white;
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-size: 16px;
+}
+
+.user-role {
+    color: var(--sidebar-icon);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.user-action {
+    color: var(--sidebar-icon);
+    font-size: 18px;
+    transition: var(--transition);
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-action:hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--sidebar-accent);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 992px) {
+    .sidebar { width: 90px; }
+    .logo-text, .nav-title, .nav-item span, .badge, .user-info { display: none; }
+    .logo { justify-content: center; }
+    .nav-item { justify-content: center; padding: 18px 20px; }
+    .user-section { justify-content: center; padding: 20px 15px; }
+}

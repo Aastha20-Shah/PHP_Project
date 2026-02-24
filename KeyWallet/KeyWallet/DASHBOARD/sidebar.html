@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KeyVault - Sidebar</title>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* ===== SIDEBAR STYLES ===== */
+    :root {
+      --sidebar-bg: #1a1d2b;
+      --sidebar-accent: #5d78ff;
+      --sidebar-hover: #232838;
+      --sidebar-text: #e0e0ff;
+      --sidebar-icon: #8c94b3;
+      --transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 280px;
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      box-shadow: 0 0 40px rgba(0,0,0,0.25);
+      transition: var(--transition);
+      z-index: 100;
+      overflow: hidden;
+    }
+
+    .logo-section {
+      padding: 28px 28px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--sidebar-accent), #7989ff);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 22px;
+      box-shadow: 0 5px 15px rgba(93,120,255,0.3);
+    }
+
+    .logo-text {
+      font-size: 24px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-text span {
+      color: var(--sidebar-accent);
+    }
+
+    .nav-section {
+      padding: 30px 0;
+      flex: 1;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .nav-title {
+      padding: 0 28px 16px;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--sidebar-icon);
+      font-weight: 600;
+    }
+
+    .nav-item {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 28px;
+      color: var(--sidebar-text);
+      text-decoration: none;
+      transition: var(--transition);
+      font-weight: 500;
+      position: relative;
+      opacity: 0.9;
+    }
+
+    .nav-item i {
+      width: 24px;
+      text-align: center;
+      font-size: 18px;
+      color: var(--sidebar-icon);
+      transition: var(--transition);
+    }
+
+    .nav-item:hover {
+      background: var(--sidebar-hover);
+      opacity: 1;
+      transform: translateX(5px);
+    }
+
+    .nav-item:hover i {
+      color: var(--sidebar-accent);
+      transform: scale(1.1);
+    }
+
+    .nav-item.active {
+      background: rgba(93, 120, 255, 0.12);
+      opacity: 1;
+      border-left: 4px solid var(--sidebar-accent);
+    }
+
+    .nav-item.active i {
+      color: var(--sidebar-accent);
+    }
+
+    .badge {
+      background: var(--sidebar-accent);
+      color: white;
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 10px;
+      font-weight: 600;
+      margin-left: auto;
+    }
+
+    .user-section {
+      margin-top: auto;
+      padding: 20px 28px;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .user-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #7989ff, var(--sidebar-accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 18px;
+      box-shadow: 0 5px 15px rgba(93,120,255,0.25);
+    }
+
+    .user-info {
+      flex: 1;
+    }
+
+    .user-name {
+      color: white;
+      font-weight: 600;
+      margin-bottom: 4px;
+      font-size: 16px;
+    }
+
+    .user-role {
+      color: var(--sidebar-icon);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .user-action {
+      color: var(--sidebar-icon);
+      font-size: 18px;
+      transition: var(--transition);
+      cursor: pointer;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .user-action:hover {
+      background: rgba(255,255,255,0.08);
+      color: var(--sidebar-accent);
+    }
+
+    /* Responsive */
+    @media (max-width: 992px) {
+      .sidebar { width: 90px; }
+      .logo-text, .nav-title, .nav-item span, .badge, .user-info { display: none; }
+      .logo { justify-content: center; }
+      .nav-item { justify-content: center; padding: 18px 20px; }
+      .user-section { justify-content: center; padding: 20px 15px; }
+    }
+
+    /* Content area */
+    .content {
+      flex: 1;
+      height: 100vh;
+    }
+
+    .content iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="logo-section">
+      <div class="logo">
+        <div class="logo-icon"><i class="fas fa-lock"></i></div>
+        <div class="logo-text">Key<span>Vault</span></div>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-title">Navigation</div>
+      <a href="dashboard.php" target="contentFrame" class="nav-item active"><i class="fas fa-home"></i><span>Dashboard</span></a>
+      <a href="password.php" target="contentFrame" class="nav-item">
+        <i class="fas fa-key"></i><span>Passwords</span>
+        <span class="badge" id="passwordCount">0</span>
+      <a href="documents.php" target="contentFrame" class="nav-item"><i class="fas fa-file-alt"></i><span>Documents</span></a>
+      <a href="paymentcards.php" target="contentFrame" class="nav-item"><i class="fas fa-credit-card"></i><span>Payment Cards</span></a>
+      <a href="privatemedia.php" target="contentFrame" class="nav-item"><i class="fas fa-photo-video"></i><span>Private Media</span></a>
+
+      <div class="nav-title" style="margin-top: 30px;">Security</div>
+      <a href="securitytools.php" target="contentFrame" class="nav-item"><i class="fas fa-shield-alt"></i><span>Security Tools</span></a>
+      <a href="auditlog.php" target="contentFrame" class="nav-item"><i class="fas fa-history"></i><span>Audit Log</span></a>
+      <a href="logout.php" class="nav-item"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+    </div>
+
+    <div class="user-section">
+      <div class="user-avatar"><?= $initials ?></div>
+      <div class="user-info">
+        <div class="user-name"><?= htmlspecialchars($userName) ?></div>
+        <!-- <div class="user-role">Administrator</div> -->
+      </div>
+      <div class="user-action"><a href="profile.php" style="color: white;text-decoration: none;"><i class="fas fa-cog"></a></i></div>
+    </div>
+  </div>
+
+  <!-- Content Area with Iframe -->
+  <div class="content">
+    <iframe name="contentFrame" src="dashboard.php"></iframe>
+  </div>
+
+  <script>
+    // Highlight active nav item
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', function () {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+    function updatePasswordCount() {
+  fetch("count_passwords.php")
+    .then(res => res.text())
+    .then(count => {
+      document.getElementById("passwordCount").textContent = count;
+    });
+}
+
+// Initial load
+updatePasswordCount();
+
+// Optional: refresh count every 10s
+setInterval(updatePasswordCount, 10000);
+fetch('get_user.php')
+  .then(res => res.json())
+  .then(data => {
+    const avatarEl = document.querySelector('.user-avatar');
+    if (data.avatar) {
+      avatarEl.innerHTML = `<img src="${data.avatar}" style="width:48px;height:48px;border-radius:12px">`;
+    } else {
+      avatarEl.textContent = data.initials;
+    }
+    document.querySelector('.user-name').textContent = data.name;
+  });
+</script>
+  </script>
+</body>
+</html>

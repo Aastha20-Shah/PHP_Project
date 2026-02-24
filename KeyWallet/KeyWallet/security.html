@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security | KeyVault</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { background: linear-gradient(135deg, #f5f7fa 0%, #e4e7f1 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+
+    .security-container { width: 100%; max-width: 1200px; display: flex; background: white; border-radius: 20px; box-shadow: 0 15px 50px rgba(0,0,0,0.1); overflow: hidden; min-height: 700px; }
+
+    /* Left Graphic Section */
+    .graphic-section { flex:1; background: linear-gradient(135deg, #5e35b1 0%, #3949ab 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 60px; color:white; position: relative; overflow:hidden; }
+    .graphic-overlay { position:absolute; top:0; left:0; width:100%; height:100%; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,0 L100,0 L100,100 Z" fill="rgba(255,255,255,0.05)" /></svg>'); background-size: cover; }
+
+    .graphic-content { max-width: 500px; text-align: center; z-index:2; }
+
+    /* Big Security Logo */
+    .big-logo { font-size: 100px; color: #ffd54f; margin-bottom: 30px; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); opacity:1; } 50% { transform: scale(1.1); opacity:0.8; } }
+
+    .graphic-title { font-size: 36px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.5px; }
+    .graphic-description { font-size: 18px; line-height: 1.6; opacity: 0.9; margin-bottom: 40px; }
+    .security-icons { display: flex; gap: 20px; justify-content: center; }
+    .security-icons i { font-size: 32px; }
+
+    /* Right Features Section */
+    .features-section { flex:1; display:flex; flex-direction: column; justify-content:center; padding: 80px; max-width:600px; }
+    .features-header { margin-bottom:50px; }
+    .features-title { font-size:36px; font-weight:700; color:#2d3748; margin-bottom:15px; letter-spacing:-0.5px; }
+    .features-subtitle { font-size:18px; color:#718096; margin-bottom:30px; }
+    .feature { display:flex; gap:20px; align-items:flex-start; margin-bottom:30px; }
+    .feature-icon { font-size:32px; color:#5e35b1; min-width:40px; }
+    .feature-content h3 { font-size:18px; margin-bottom:10px; }
+    .feature-content p { font-size:14px; opacity:0.9; }
+
+    @media (max-width:992px) { .security-container { flex-direction: column; max-width:700px; } .graphic-section, .features-section { padding:50px; } }
+    @media (max-width:576px) { .security-container { min-height:auto; } .graphic-section, .features-section { padding:40px 20px; } }
+</style>
+</head>
+<body>
+
+<div class="security-container">
+
+    <!-- Left Graphic Section -->
+    <div class="graphic-section">
+        <div class="graphic-overlay"></div>
+        <div class="graphic-content">
+            <!-- Big Security Logo -->
+            <div class="big-logo">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+
+            <h1 class="graphic-title">Your Security, Our Priority</h1>
+            <p class="graphic-description">KeyVault ensures your data stays safe with state-of-the-art encryption and strict privacy protocols.</p>
+            <div class="security-icons">
+                <i class="fas fa-shield-alt"></i>
+                <i class="fas fa-lock"></i>
+                <i class="fas fa-user-secret"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Features Section -->
+    <div class="features-section">
+        <div class="features-header">
+            <h1 class="features-title">Security Features</h1>
+            <p class="features-subtitle">Explore the measures we take to protect your data</p>
+        </div>
+
+        <div class="feature">
+            <i class="feature-icon fas fa-shield-alt"></i>
+            <div class="feature-content">
+                <h3>Military-Grade Encryption</h3>
+                <p>AES-256 encryption ensures all your passwords, documents, and media are fully protected.</p>
+            </div>
+        </div>
+
+        <div class="feature">
+            <i class="feature-icon fas fa-user-secret"></i>
+            <div class="feature-content">
+                <h3>Zero-Knowledge Architecture</h3>
+                <p>We never store your master password or keys—only you have access to your vault.</p>
+            </div>
+        </div>
+
+        <div class="feature">
+            <i class="feature-icon fas fa-shield-virus"></i>
+            <div class="feature-content">
+                <h3>Continuous Monitoring</h3>
+                <p>Real-time monitoring and alerts for suspicious activities keep your account secure.</p>
+            </div>
+        </div>
+
+        <div class="feature">
+            <i class="feature-icon fas fa-sync-alt"></i>
+            <div class="feature-content">
+                <h3>Smart Password Rotation</h3>
+                <p>Automatically update outdated passwords to maintain top-level security.</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
