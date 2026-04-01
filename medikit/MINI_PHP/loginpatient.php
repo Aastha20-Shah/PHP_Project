@@ -5,26 +5,28 @@ include("config.php");
 $msg = "";
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Get the posted data
-    $firstname = filter_input(INPUT_POST, 'firstname', FILTER_SANITIZE_STRING); // Changed from date_of_birth
-    $phone = filter_input(INPUT_POST, 'phone_number', FILTER_SANITIZE_STRING);
+    $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
+    $password = $_POST['password'];
 
-    // SQL statement updated to check firstname and phone_number
-    $stmt = $conn->prepare("SELECT id, firstname, lastname FROM patient WHERE firstname=? AND phone_number=?");
+    // SQL statement to check email
+    $stmt = $conn->prepare("SELECT id, firstname, lastname, password FROM patient WHERE email=?");
     if ($stmt) {
-        // Bind parameters updated to use firstname and phone
-        $stmt->bind_param("ss", $firstname, $phone);
+        $stmt->bind_param("s", $email);
         $stmt->execute();
         $result = $stmt->get_result();
         
         if ($result->num_rows > 0) {
             $patient = $result->fetch_assoc();
-            $_SESSION['patient_id'] = $patient['id'];
-            $_SESSION['patient_name'] = $patient['firstname'] . " " . $patient['lastname'];
-            header("Location: index.php"); 
-            exit;
+            if (password_verify($password, $patient['password'])) {
+                $_SESSION['patient_id'] = $patient['id'];
+                $_SESSION['patient_name'] = $patient['firstname'] . " " . $patient['lastname'];
+                header("Location: index.php"); 
+                exit;
+            } else {
+                $msg = "Invalid Email or Password!";
+            }
         } else {
-            // Updated error message to reflect new input fields
-            $msg = "Invalid First Name or Phone Number!";
+            $msg = "Invalid Email or Password!";
         }
         $stmt->close();
     } else {
@@ -71,12 +73,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                             <form method="POST" action="loginpatient.php">
                                 <div class="mb-3">
-                                    <label for="firstname" class="form-label fw-bold">First Name</label>
-                                    <input type="text" id="firstname" name="firstname" class="form-control" required>
+                                    <label for="email" class="form-label fw-bold">Email</label>
+                                    <input type="email" id="email" name="email" class="form-control" required>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="phone_number" class="form-label fw-bold">Phone Number</label>
-                                    <input type="text" id="phone_number" name="phone_number" class="form-control" required>
+                                    <label for="password" class="form-label fw-bold">Password</label>
+                                    <input type="password" id="password" name="password" class="form-control" required>
                                 </div>
                                 <div class="d-grid mt-4">
                                     <button type="submit" class="btn btn-primary">Login</button>

@@ -108,7 +108,7 @@ if ($is_logged_in) {
             </div>
         </nav>
     </header>
-    <?php if ($page_name != 'index.php' && $page_name != 'loginpatient.php' && $page_name != 'registerpatient.php' && $page_name != 'login.php' && $page_name != 'register.php' && $page_name != 'login_doctor.php'): ?>
+    <?php if ($page_name != 'index.php' && $page_name != 'doctor_details.php' && $page_name != 'loginpatient.php' && $page_name != 'registerpatient.php' && $page_name != 'login.php' && $page_name != 'register.php' && $page_name != 'login_doctor.php'): ?>
     <section class="page-header">
         <div class="container">
             <div class="row">

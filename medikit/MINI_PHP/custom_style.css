@@ -12,6 +12,11 @@ body {
     color: var(--text-color);
 }
 
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
 .top-bar {
     background: var(--secondary-color);
     padding: 10px 0;
@@ -70,6 +75,18 @@ body {
     background-color: var(--secondary-color); color: var(--primary-color);
     transition: all .3s ease;
 }
+.feature-card .category-photo {
+    width: 100%;
+    height: 130px;
+    object-fit: cover;
+    border-radius: 10px;
+    display: block;
+}
+.feature-card .category-desc {
+    font-size: 0.92rem;
+    line-height: 1.35;
+    margin-top: 6px;
+}
 
 .partners-slider .swiper-slide {
     text-align: center; opacity: 0.6; transition: opacity .3s;
@@ -87,6 +104,7 @@ body {
     /* --- NEW CSS for Spacing --- */
     display: flex; /* Ensure it is a flex container */
     justify-content: space-evenly !important; /* Spreads items evenly with space around them */
+    flex-wrap: wrap;
     border-bottom: none; /* Remove default nav-tabs border */
     /* --------------------------- */
 }
@@ -160,6 +178,14 @@ body {
 .testimonial-card h6 { color: var(--heading-color) !important; }
 .swiper-pagination-bullet { background: rgba(255,255,255,0.5); width: 10px; height: 10px; }
 .swiper-pagination-bullet-active { background: #fff; }
+.swiper-container,
+.testimonials-slider {
+    width: 100%;
+    overflow: hidden;
+}
+.swiper-wrapper {
+    box-sizing: border-box;
+}
 
 .footer {
     background: var(--primary-color); color: #CBD5E1;
@@ -232,4 +258,250 @@ body {
 }
 .accordion-collapse {
     border-top: 1px solid #dee2e6;
+}
+
+/* ── Slot booking components ───────────────────────── */
+.slot-booking-card {
+    border: 1px solid #e5ebf5;
+    border-radius: 14px;
+    background: #fff;
+    padding: 18px;
+    box-shadow: 0 5px 16px rgba(15, 62, 122, 0.06);
+}
+.slot-booking-card-sidebar {
+    border-radius: 14px;
+    background: #f3f5f8;
+    border-color: #d8dee8;
+    padding: 0;
+    overflow: hidden;
+}
+.slot-side-title {
+    font-size: 2.65rem;
+    font-weight: 800;
+    color: #3a4556;
+    line-height: 1.05;
+    padding: 16px 20px 0;
+}
+.slot-side-visit {
+    background: #bfe8f4;
+    color: #2b3a4d;
+    padding: 14px 20px;
+    font-weight: 700;
+    border-top: 1px solid #c9e6f0;
+    border-bottom: 1px solid #c9e6f0;
+}
+.slot-side-visit i {
+    color: #0b8acb;
+}
+.slot-card-header {
+    border-bottom: 1px solid #e8edf6;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+}
+.slot-card-fee {
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+.slot-avatar {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: #e3ebf9;
+    color: #1a76d1;
+    font-weight: 700;
+    font-size: 1.55rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.slot-day-pills {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    padding-bottom: 0;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #e8edf6;
+}
+.slot-day-pills-sidebar {
+    gap: 0;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0 10px;
+    border-bottom: 1px solid #d8dee8;
+}
+.slot-day-pill {
+    border: 0;
+    border-radius: 0;
+    padding: 10px 16px 8px;
+    background: transparent;
+    min-width: 180px;
+    transition: all 0.2s ease;
+    text-align: center;
+    cursor: pointer;
+}
+.slot-day-pill .slot-day-label {
+    font-weight: 700;
+    display: block;
+    color: #1f2937;
+    font-size: 1rem;
+    line-height: 1.2;
+}
+.slot-day-pill .slot-day-meta {
+    font-size: 0.82rem;
+    color: #16a34a;
+    font-weight: 600;
+}
+.slot-day-pill.active {
+    background: transparent;
+    color: inherit;
+    border-bottom: 3px solid #1ab6ec;
+    box-shadow: none;
+}
+.slot-day-pill.active .slot-day-meta {
+    color: #16a34a;
+}
+.slot-day-pills-sidebar .slot-day-pill {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 14px 6px 10px;
+    text-align: center;
+}
+.slot-day-pills-sidebar .slot-day-pill .slot-day-label {
+    font-size: 1.95rem;
+    line-height: 1.1;
+    color: #1f2937;
+    font-weight: 700;
+}
+.slot-day-pills-sidebar .slot-day-pill .slot-day-meta {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #16a34a;
+}
+.slot-day-pills-sidebar .slot-day-pill.active {
+    background: transparent;
+    color: #0ea5e9;
+    border-bottom: 4px solid #1ab6ec;
+    box-shadow: none;
+}
+.slot-day-pills-sidebar .slot-day-pill.active .slot-day-label {
+    color: #1f2937;
+}
+.slot-day-pills-sidebar .slot-day-pill.active .slot-day-meta {
+    color: #16a34a;
+}
+.slot-body {
+    border: 1px solid #edf2fa;
+    border-radius: 10px;
+    min-height: 150px;
+    padding: 10px 14px;
+    background: #fff;
+}
+.slot-body-sidebar {
+    border: 0;
+    border-radius: 0;
+    background: #f3f5f8;
+    min-height: 260px;
+    padding: 8px 14px 12px;
+}
+.slot-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.slot-period-title {
+    font-weight: 700;
+    color: #223049;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.95rem;
+}
+.slot-period-count {
+    font-weight: 600;
+    font-size: 0.84rem;
+    color: #7b8798;
+}
+.slot-period-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.slot-body-sidebar .slot-period {
+    border-top: 1px solid #d8dee8;
+    padding-top: 14px;
+    margin-top: 14px;
+}
+.slot-body-sidebar .slot-period:first-child {
+    border-top: 0;
+    padding-top: 0;
+    margin-top: 0;
+}
+.slot-btn {
+    border: 1px solid #1a76d1;
+    border-radius: 4px;
+    padding: 6px 12px;
+    background: #fff;
+    color: #1a76d1;
+    font-weight: 500;
+    font-size: 0.86rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+.slot-btn:hover {
+    border-color: #1a76d1;
+    color: #145da8;
+}
+.slot-btn.selected {
+    background: #1a76d1;
+    color: #fff;
+    border-color: #1a76d1;
+    box-shadow: 0 8px 16px rgba(26, 118, 209, 0.2);
+}
+.slot-body-sidebar .slot-btn {
+    border-radius: 4px;
+    padding: 8px 12px;
+    min-width: 106px;
+    font-size: 1.02rem;
+    font-weight: 500;
+    border-color: #1a76d1;
+}
+.slot-message {
+    color: #5b6bb0;
+    padding: 20px 16px;
+    font-size: 0.95rem;
+}
+.slot-final {
+    display: none;
+    border: 1px solid #d7e3f7;
+    border-radius: 10px;
+    padding: 14px;
+    background: #f7faff;
+    margin-top: 14px;
+}
+.slot-final.show {
+    display: block;
+}
+.slot-summary-block {
+    min-width: 180px;
+}
+.slot-summary-label {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: #7a8dbd;
+    letter-spacing: 0.08em;
+}
+.slot-summary-value {
+    font-weight: 700;
+    color: #1a2b6d;
+    font-size: 1.1rem;
+}
+.slot-placeholder {
+    border: 1px dashed #c3d4ff;
+    border-radius: 16px;
+    padding: 30px;
+    background: #f8faff;
 }

@@ -784,7 +784,7 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
                 <i class="fas fa-th-large"></i>
                 <span>Dashboard</span>
             </a>
-            <a href="my_appointments.php" class="nav-item">
+            <a href="booking.php" class="nav-item">
                 <i class="fas fa-calendar-check"></i>
                 <span>Appointments</span>
             </a>
@@ -1070,6 +1070,22 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
                             </select>
                             <small class="text-muted">You can select multiple specialties</small>
                         </div>
+                        <div class="mb-3">
+                            <label for="clinicNameInput" class="form-label">Clinic/Hospital Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="clinicNameInput" required placeholder="e.g. Apollo Hospital">
+                        </div>
+                        <div class="mb-3">
+                            <label for="experienceInput" class="form-label">Experience (Years) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="experienceInput" required min="0" placeholder="e.g. 5">
+                        </div>
+                        <div class="mb-3">
+                            <label for="educationInput" class="form-label">Education/Degrees <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="educationInput" required placeholder="e.g. MBBS, MD(Cardiology)">
+                        </div>
+                        <div class="mb-3">
+                            <label for="bioInput" class="form-label">Professional Bio <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="bioInput" rows="3" required placeholder="Tell patients about your expertise..."></textarea>
+                        </div>
                         <div id="profileSetupMessage"></div>
                     </form>
                 </div>
@@ -1136,9 +1152,13 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
         $('#saveProfileBtn').on('click', function() {
             const categoryId = $('#categorySelect').val();
             const specialities = $('#specialitySelect').val();
+            const clinicName = $('#clinicNameInput').val();
+            const experience = $('#experienceInput').val();
+            const education = $('#educationInput').val();
+            const bio = $('#bioInput').val();
 
-            if (!categoryId || !specialities || specialities.length === 0) {
-                $('#profileSetupMessage').html('<div class="alert alert-danger">Please select category and at least one specialty</div>');
+            if (!categoryId || !specialities || specialities.length === 0 || !clinicName || !experience || !education || !bio) {
+                $('#profileSetupMessage').html('<div class="alert alert-danger">Please fill out all required fields</div>');
                 return;
             }
 
@@ -1149,7 +1169,11 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
                 type: 'POST',
                 data: {
                     category_id: categoryId,
-                    specialities: specialities
+                    specialities: specialities,
+                    clinic_name: clinicName,
+                    experience_years: experience,
+                    education: education,
+                    bio: bio
                 },
                 dataType: 'json',
                 success: function(response) {

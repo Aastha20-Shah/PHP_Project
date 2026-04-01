@@ -100,6 +100,7 @@ $did_search = false;
 if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_POST['book'])) {
     $did_search           = true;
     $search_term          = isset($_POST['search_term'])          ? mysqli_real_escape_string($conn, trim($_POST['search_term'])) : '';
+    $location_term        = isset($_POST['location_term'])        ? mysqli_real_escape_string($conn, trim($_POST['location_term'])) : '';
     $category_id_filter   = isset($_POST['category_id_filter'])   ? intval($_POST['category_id_filter'])   : 0;
     $speciality_id_filter = isset($_POST['speciality_id_filter']) ? intval($_POST['speciality_id_filter']) : 0;
 
@@ -109,8 +110,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_POST['book'])) {
     if ($search_term !== '') {
         $where_clauses[] = "(u.firstname  LIKE '%$search_term%'
                           OR u.lastname   LIKE '%$search_term%'
+                          OR u.clinic_name LIKE '%$search_term%'
                           OR c.category_name LIKE '%$search_term%'
-                          OR s.doctor_speciality LIKE '%$search_term%')";
+                          OR s.doctor_speciality LIKE '%$search_term%'
+                          OR u.address LIKE '%$search_term%')";
+    }
+
+    if ($location_term !== '') {
+        $where_clauses[] = "u.address LIKE '%$location_term%'";
     }
 
     // Category filter — only apply when a specific category is chosen
@@ -266,11 +273,23 @@ $categories = mysqli_query($conn, "SELECT * FROM category ORDER BY category_name
                 <div class="card-body p-4">
                     <form method="POST" action="index.php" id="doctor-search-form">
                         <div class="row g-3 align-items-end">
-                            <div class="col-lg">
-                                <label for="search_term" class="form-label fw-bold small">Search Doctor, Speciality…</label>
-                                <input type="text" name="search_term" id="search_term" class="form-control"
-                                    placeholder="e.g., Cardiology, Dr. Smith"
-                                    value="<?php echo isset($_POST['search_term']) ? htmlspecialchars($_POST['search_term']) : ''; ?>">
+                            <div class="col-lg-4">
+                                <label for="location_term" class="form-label fw-bold small">Location</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0"><i class="fas fa-map-marker-alt text-primary"></i></span>
+                                    <input type="text" name="location_term" id="location_term" class="form-control border-start-0"
+                                        placeholder="e.g., Bangalore"
+                                        value="<?php echo isset($_POST['location_term']) ? htmlspecialchars($_POST['location_term']) : ''; ?>">
+                                </div>
+                            </div>
+                            <div class="col-lg-5">
+                                <label for="search_term" class="form-label fw-bold small">Doctor / Clinic / Speciality</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-primary"></i></span>
+                                    <input type="text" name="search_term" id="search_term" class="form-control border-start-0"
+                                        placeholder="e.g., Dr. Smith, Dental, Cardiology"
+                                        value="<?php echo isset($_POST['search_term']) ? htmlspecialchars($_POST['search_term']) : ''; ?>">
+                                </div>
                             </div>
                             <div class="col-lg" id="speciality-filter-group"
                                 style="display:<?php echo (isset($_POST['category_id_filter']) && intval($_POST['category_id_filter']) > 0) ? 'block' : 'none'; ?>;">
@@ -315,30 +334,50 @@ $categories = mysqli_query($conn, "SELECT * FROM category ORDER BY category_name
                     <h4 class="fw-bold">Or Browse by Categories</h4>
                 </div>
                 <?php
-                $icon_map = [
-                    'cardiology'      => 'fas fa-heartbeat',
-                    'dentistry'       => 'fas fa-tooth',
-                    'dermatology'     => 'fas fa-spa',
-                    'general medicine' => 'fas fa-stethoscope',
-                    'gynecology'      => 'fas fa-venus',
-                    'neurology'       => 'fas fa-brain',
-                    'oncology'        => 'fas fa-radiation',
-                    'pediatric'       => 'fas fa-child',
-                    'ortho'           => 'fas fa-bone',
-                    'physio'          => 'fas fa-walking',
-                    'eye'             => 'fas fa-eye',
-                    'ent'             => 'fas fa-head-side-virus',
-                    'psychiatry'      => 'fas fa-comment-medical',
-                    'ophthalmology'   => 'fas fa-eye',
+                $category_photo_map = [
+                    'cardiology'       => 'https://images.unsplash.com/photo-1551190822-a9333d879b1f?auto=format&fit=crop&w=900&q=80',
+                    'dentistry'        => 'https://images.unsplash.com/photo-1588776814546-b1f57f4d0f57?auto=format&fit=crop&w=900&q=80',
+                    'dermatology'      => 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=900&q=80',
+                    'general medicine' => 'https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=900&q=80',
+                    'gynecology'       => 'https://images.unsplash.com/photo-1584516150909-c43483ee7935?auto=format&fit=crop&w=900&q=80',
+                    'neurology'        => 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=900&q=80',
+                    'oncology'         => 'https://images.unsplash.com/photo-1631815588090-d1bcbe9a7b5c?auto=format&fit=crop&w=900&q=80',
+                    'pediatric'        => 'https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?auto=format&fit=crop&w=900&q=80',
+                    'ortho'            => 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=900&q=80',
+                    'physio'           => 'https://images.unsplash.com/photo-1580281657521-72f9e8f5f2a8?auto=format&fit=crop&w=900&q=80',
+                    'eye'              => 'https://images.unsplash.com/photo-1584982751601-97dcc096659c?auto=format&fit=crop&w=900&q=80',
+                    'ent'              => 'https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=900&q=80',
+                    'psychiatry'       => 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=900&q=80',
+                    'ophthalmology'    => 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=900&q=80',
                 ];
+                $category_desc_map = [
+                    'cardiology'       => 'Heart and blood vessel care by experienced specialists.',
+                    'dentistry'        => 'Complete oral and dental care for healthy smiles.',
+                    'dermatology'      => 'Skin, hair, and nail treatment from skin experts.',
+                    'general medicine' => 'Primary care for everyday health concerns.',
+                    'gynecology'       => 'Comprehensive women health and pregnancy care.',
+                    'neurology'        => 'Advanced brain, nerve, and spine treatment.',
+                    'oncology'         => 'Cancer screening, diagnosis, and specialist support.',
+                    'pediatric'        => 'Child-friendly healthcare from infant to teen.',
+                    'ortho'            => 'Bone, joint, and muscle pain management.',
+                    'physio'           => 'Rehabilitation and movement therapy support.',
+                    'eye'              => 'Vision checkups and complete eye treatment.',
+                    'ent'              => 'Ear, nose, and throat specialist consultation.',
+                    'psychiatry'       => 'Mental health support and counseling care.',
+                    'ophthalmology'    => 'Specialized eye surgery and vision care.'
+                ];
+                $default_category_desc = 'Consult experienced doctors for diagnosis and treatment.';
+                $default_category_photo = 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=900&q=80';
                 if ($categories && mysqli_num_rows($categories) > 0) {
                     mysqli_data_seek($categories, 0);
                     while ($cat = mysqli_fetch_assoc($categories)):
                         $name_lower = strtolower($cat['category_name']);
-                        $icon_class = 'fas fa-briefcase-medical';
-                        foreach ($icon_map as $keyword => $icon) {
+                        $category_photo = $default_category_photo;
+                        $category_desc = $default_category_desc;
+                        foreach ($category_photo_map as $keyword => $photo_url) {
                             if (strpos($name_lower, $keyword) !== false) {
-                                $icon_class = $icon;
+                                $category_photo = $photo_url;
+                                $category_desc = $category_desc_map[$keyword] ?? $default_category_desc;
                                 break;
                             }
                         }
@@ -348,8 +387,9 @@ $categories = mysqli_query($conn, "SELECT * FROM category ORDER BY category_name
                                 data-category-name="<?php echo htmlspecialchars($cat['category_name']); ?>"
                                 data-category-id="<?php echo $cat['id']; ?>">
                                 <div class="card feature-card h-100 p-3">
-                                    <div class="icon mx-auto mb-2"><i class="<?php echo $icon_class; ?>"></i></div>
+                                    <img src="<?php echo htmlspecialchars($category_photo); ?>" class="category-photo mb-3" alt="<?php echo htmlspecialchars($cat['category_name']); ?>">
                                     <h6 class="fw-bold"><?php echo htmlspecialchars($cat['category_name']); ?></h6>
+                                    <p class="category-desc text-muted mb-0"><?php echo htmlspecialchars($category_desc); ?></p>
                                 </div>
                             </a>
                         </div>
@@ -357,63 +397,44 @@ $categories = mysqli_query($conn, "SELECT * FROM category ORDER BY category_name
                 } ?>
             </div><!-- /category-browse -->
 
+            <!-- ── FILTER BAR ─────────────── -->
+            <div id="filter-bar-container" style="display: none; background: #2b3074; padding: 12px; border-radius: 8px; margin-bottom: 20px;">
+                <div class="row align-items-center g-2" id="filter-bar">
+                    <div class="col-md-3">
+                        <select name="gender_filter" class="form-select form-select-sm border-0" style="background:#4b5094; color:white;">
+                            <option value="">Gender</option>
+                            <option value="Male">Male Doctor</option>
+                            <option value="Female">Female Doctor</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="experience_filter" class="form-select form-select-sm border-0" style="background:#4b5094; color:white;">
+                            <option value="0">Experience</option>
+                            <option value="5">5+ Years of experience</option>
+                            <option value="10">10+ Years of experience</option>
+                            <option value="15">15+ Years of experience</option>
+                            <option value="20">20+ Years of experience</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 text-white fw-bold d-flex align-items-center">
+                        <span class="me-2">All Filters <i class="fas fa-chevron-down ms-1"></i></span>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-center">
+                        <span class="text-white me-2 fw-bold text-nowrap">Sort By</span>
+                        <select name="sort_by" class="form-select form-select-sm border-0" style="background:#4b5094; color:white;">
+                            <option value="relevance">Relevance</option>
+                            <option value="experience">Experience - High to Low</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             <!-- ── RESULTS (loaded via AJAX only on Search click) ─────────────── -->
             <div id="search-results" style="display:none;"></div>
 
-            <!-- ── BOOKING FORM (loaded by Book Now without refresh) ─────────── -->
-            <div id="booking-form-container">
-                <?php if (isset($_GET['doctor_id'])): ?>
-                    <div class="card mt-4" id="booking-form">
-                        <div class="card-body p-4">
-                            <h4 class="card-title fw-bold mb-3">
-                                <i class="fas fa-calendar-alt me-2 text-primary"></i>Complete Your Booking
-                            </h4>
-                            <form method="POST" action="index.php">
-                                <input type="hidden" name="doctor_id" value="<?php echo intval($_GET['doctor_id']); ?>">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label for="appointment_date" class="form-label fw-bold">Date</label>
-                                        <input type="date" name="appointment_date" id="appointment_date"
-                                            class="form-control" required min="<?php echo date('Y-m-d'); ?>">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="time_id" class="form-label fw-bold">Time</label>
-                                        <select name="time_id" id="time_id" class="form-select" required>
-                                            <option value="">-- Select a Date first --</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="speciality_id" class="form-label fw-bold">Reason / Speciality</label>
-                                        <select name="speciality_id" id="speciality_id" class="form-select" required>
-                                            <?php
-                                            $doc_id = intval($_GET['doctor_id']);
-                                            $spec_r = mysqli_query(
-                                                $conn,
-                                                "SELECT s.id, s.doctor_speciality
-                                           FROM speciality s
-                                     INNER JOIN doctor_speciality ds ON ds.speciality_id = s.id
-                                          WHERE ds.doctor_id = '$doc_id'
-                                          ORDER BY s.doctor_speciality"
-                                            );
-                                            while ($row = mysqli_fetch_assoc($spec_r)) {
-                                                echo "<option value='{$row['id']}'>" . htmlspecialchars($row['doctor_speciality']) . "</option>";
-                                            }
-                                            ?>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="note" class="form-label fw-bold">Note (Optional)</label>
-                                        <input type="text" name="note" id="note" class="form-control"
-                                            placeholder="e.g., annual check-up">
-                                    </div>
-                                </div>
-                                <button type="submit" name="book" class="btn btn-primary mt-3">
-                                    <i class="fas fa-calendar-check me-2"></i>Finalize Booking
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                <?php endif; ?>
+            <!-- ── BOOKING FORM PLACEHOLDER ─────────── -->
+            <div id="booking-form" class="mt-4">
+                <div id="booking-form-container"></div>
             </div>
 
         </div>
@@ -531,43 +552,52 @@ $categories = mysqli_query($conn, "SELECT * FROM category ORDER BY category_name
 
 <script>
     $(document).ready(function() {
+        var bookingLoader = '<div class="slot-message text-center"><i class="fas fa-spinner fa-spin me-2"></i>Loading booking form...</div>';
 
-        <?php if (isset($_GET['doctor_id'])): ?>
-            setTimeout(function() {
-                var $form = $('#booking-form');
-                if ($form.length) {
-                    $('html, body').animate({
-                        scrollTop: $form.offset().top - 80
-                    }, 500);
-                }
-            }, 150);
-        <?php endif; ?>
-
-        // ── 3. Date → available time slots (AJAX) ──────────────────────────────
-        $(document).on('change', '#appointment_date', function() {
-            var selectedDate = $(this).val();
-            var doctorId = parseInt($(this).closest('form').find('input[name="doctor_id"]').val(), 10) || 0;
-            if (selectedDate && doctorId > 0) {
-                $('#time_id').html('<option value="">Loading…</option>');
-                $.ajax({
-                    type: 'POST',
-                    url: 'get_data.php',
-                    data: {
-                        action: 'get_times',
-                        doctor_id: doctorId,
-                        selected_date: selectedDate
-                    },
-                    success: function(response) {
-                        $('#time_id').html(response);
-                    },
-                    error: function() {
-                        $('#time_id').html('<option value="">Error loading times</option>');
-                    }
-                });
-            } else {
-                $('#time_id').html('<option value="">-- Select a Date first --</option>');
+        function injectBookingForm($container, doctorId, options) {
+            if (!$container.length || !doctorId) {
+                return;
             }
-        });
+            options = options || {};
+
+            if ($container.data('loaded') === true && options.allowToggle) {
+                $container.slideToggle(300);
+                return;
+            }
+
+            $container
+                .stop(true, true)
+                .slideDown(0)
+                .html(bookingLoader)
+                .data('loaded', 'loading');
+
+            $.ajax({
+                type: 'POST',
+                url: 'get_data.php',
+                data: {
+                    action: 'get_booking_form',
+                    doctor_id: doctorId
+                },
+                success: function(response) {
+                    $container
+                        .data('loaded', true)
+                        .hide()
+                        .html(response)
+                        .slideDown(300);
+
+                    if (options.scrollTo) {
+                        $('html, body').animate({
+                            scrollTop: $container.offset().top - 80
+                        }, 500);
+                    }
+                },
+                error: function() {
+                    $container
+                        .data('loaded', false)
+                        .html('<div class="alert alert-danger mb-0">Unable to load booking form. Please try again.</div>');
+                }
+            });
+        }
 
         // ── 4. Search form submit (AJAX, no refresh) ───────────────────────────
         $('#doctor-search-form').on('submit', function(e) {
@@ -582,13 +612,14 @@ $categories = mysqli_query($conn, "SELECT * FROM category ORDER BY category_name
             $.ajax({
                 type: 'POST',
                 url: 'get_data.php',
-                data: $form.serialize() + '&action=search_doctors',
+                data: $form.serialize() + '&' + $('#filter-bar select').serialize() + '&action=search_doctors',
                 success: function(response) {
                     var $results = $('#search-results');
                     $results.html(response).fadeIn(150);
+                    $('#filter-bar-container').fadeIn(150);
 
                     $('html, body').animate({
-                        scrollTop: $results.offset().top - 80
+                        scrollTop: $('#filter-bar-container').offset().top - 80
                     }, 500);
                 },
                 error: function() {
@@ -612,25 +643,15 @@ $categories = mysqli_query($conn, "SELECT * FROM category ORDER BY category_name
                 return;
             }
 
-            $.ajax({
-                type: 'POST',
-                url: 'get_data.php',
-                data: {
-                    action: 'get_booking_form',
-                    doctor_id: doctorId
-                },
-                success: function(response) {
-                    $('#booking-form-container').html(response);
-                    var $form = $('#booking-form');
-                    if ($form.length) {
-                        $('html, body').animate({
-                            scrollTop: $form.offset().top - 80
-                        }, 500);
-                    }
-                },
-                error: function() {
-                    alert('Unable to load booking form. Please try again.');
-                }
+            var $inlineContainer = $('#inline-booking-' + doctorId);
+
+            if ($inlineContainer.data('loaded') === true) {
+                $inlineContainer.slideToggle(300);
+                return;
+            }
+
+            injectBookingForm($inlineContainer, doctorId, {
+                scrollTo: true
             });
         });
 
@@ -688,5 +709,46 @@ $categories = mysqli_query($conn, "SELECT * FROM category ORDER BY category_name
             tab.show();
         });
 
+        // Trigger search on filter change
+        $('#filter-bar select').on('change', function() {
+            $('#doctor-search-form').submit();
+        });
+
+        // Contact Clinic Modal population
+        $(document).on('click', '.btn-contact-clinic', function() {
+            var phone = $(this).data('phone') || 'Not Available';
+            var docName = $(this).data('docname') || '';
+            $('#contactClinicPhone').text(phone);
+            $('#contactClinicTitle').text('Contact Clinic - Dr. ' + docName);
+        });
+
+        var queryDoctorId = <?php echo isset($_GET['doctor_id']) ? intval($_GET['doctor_id']) : 'null'; ?>;
+        if (queryDoctorId) {
+            injectBookingForm($('#booking-form-container'), queryDoctorId, {
+                scrollTo: true
+            });
+        } else {
+            $('#booking-form-container').html('<div class="slot-placeholder text-center text-muted py-4">Select a doctor to view available slots.</div>');
+        }
+
     });
 </script>
+
+<!-- ── Contact Clinic Modal ─────────────── -->
+<div class="modal fade" id="contactClinicModal" tabindex="-1" aria-labelledby="contactClinicModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-primary" id="contactClinicTitle">Contact Clinic</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <p class="text-muted mb-2">Phone number</p>
+                <h2 class="fw-bold text-success mb-4" id="contactClinicPhone">xxxxxxxxx</h2>
+                <div class="alert alert-light border-0 bg-light text-start text-muted small mb-0 px-4 py-3">
+                    <p class="mb-0">By calling this number, you agree to the <a href="#">Terms & Conditions</a>. If you could not connect with the center, please write to <a href="mailto:support@medkit.com">support@medkit.com</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

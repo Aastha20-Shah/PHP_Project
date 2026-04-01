@@ -12,16 +12,20 @@ if (!isset($_SESSION['doctor_id'])) {
 $doctor_id = $_SESSION['doctor_id'];
 $category_id = $_POST['category_id'] ?? null;
 $specialities = $_POST['specialities'] ?? [];
+$clinic_name = $_POST['clinic_name'] ?? '';
+$experience_years = (int)($_POST['experience_years'] ?? 0);
+$education = $_POST['education'] ?? '';
+$bio = $_POST['bio'] ?? '';
 
 if (!$category_id || empty($specialities)) {
     echo json_encode(['success' => false, 'message' => 'Please select category and at least one speciality']);
     exit;
 }
 
-// Update category in users table
-$update_query = "UPDATE users SET category_id = ? WHERE id = ?";
+// Update category and history in users table
+$update_query = "UPDATE users SET category_id = ?, clinic_name = ?, experience_years = ?, education = ?, bio = ? WHERE id = ?";
 $stmt = $conn->prepare($update_query);
-$stmt->bind_param("ii", $category_id, $doctor_id);
+$stmt->bind_param("isissi", $category_id, $clinic_name, $experience_years, $education, $bio, $doctor_id);
 
 if (!$stmt->execute()) {
     echo json_encode(['success' => false, 'message' => 'Failed to update category']);

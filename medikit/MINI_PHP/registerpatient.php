@@ -12,19 +12,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $dob = filter_input(INPUT_POST, 'date_of_birth', FILTER_SANITIZE_STRING);
     $gender = filter_input(INPUT_POST, 'gender', FILTER_SANITIZE_STRING);
     $address = filter_input(INPUT_POST, 'address', FILTER_SANITIZE_STRING);
+    $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
+    $password = $_POST['password'];
+    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-    $stmt_check = $conn->prepare("SELECT id FROM patient WHERE phone_number=?");
+    $stmt_check = $conn->prepare("SELECT id FROM patient WHERE phone_number=? OR email=?");
     if ($stmt_check) {
-        $stmt_check->bind_param("s", $phone);
+        $stmt_check->bind_param("ss", $phone, $email);
         $stmt_check->execute();
         $result = $stmt_check->get_result();
         if ($result->num_rows > 0) {
-            $msg = "A patient with this phone number is already registered!";
+            $msg = "A patient with this phone number or email is already registered!";
             $msg_type = "danger";
         } else {
-            $stmt_insert = $conn->prepare("INSERT INTO patient (firstname, lastname, phone_number, date_of_birth, gender, address) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt_insert = $conn->prepare("INSERT INTO patient (firstname, lastname, phone_number, email, password, date_of_birth, gender, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
             if ($stmt_insert) {
-                $stmt_insert->bind_param("ssssss", $firstname, $lastname, $phone, $dob, $gender, $address);
+                $stmt_insert->bind_param("ssssssss", $firstname, $lastname, $phone, $email, $hashed_password, $dob, $gender, $address);
                 if ($stmt_insert->execute()) {
                     $msg = "Registration successful! You can now <a href='loginpatient.php' class='alert-link'>login</a>.";
                     $msg_type = "success";
@@ -91,10 +94,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                 <div class="row g-3">
                                     <div class="col-md-6"><label for="firstname" class="form-label fw-bold">First Name</label><input type="text" id="firstname" name="firstname" class="form-control" required></div>
                                     <div class="col-md-6"><label for="lastname" class="form-label fw-bold">Last Name</label><input type="text" id="lastname" name="lastname" class="form-control" required></div>
+                                    <div class="col-md-6"><label for="email" class="form-label fw-bold">Email</label><input type="email" id="email" name="email" class="form-control" required></div>
                                     <div class="col-md-6"><label for="phone_number" class="form-label fw-bold">Phone Number</label><input type="tel" id="phone_number" name="phone_number" class="form-control" required></div>
+                                    <div class="col-md-6"><label for="password" class="form-label fw-bold">Password</label><input type="password" id="password" name="password" class="form-control" required></div>
                                     <div class="col-md-6"><label for="date_of_birth" class="form-label fw-bold">Date of Birth</label><input type="date" id="date_of_birth" name="date_of_birth" class="form-control" required></div>
-                                    <div class="col-12"><label for="gender" class="form-label fw-bold">Gender</label><select id="gender" name="gender" class="form-select" required><option value="" selected disabled>-- Select --</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
-                                    <div class="col-12"><label for="address" class="form-label fw-bold">Address</label><input type="text" id="address" name="address" class="form-control" required></div>
+                                    <div class="col-md-6"><label for="gender" class="form-label fw-bold">Gender</label><select id="gender" name="gender" class="form-select" required><option value="" selected disabled>-- Select --</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
+                                    <div class="col-md-6"><label for="address" class="form-label fw-bold">Address</label><input type="text" id="address" name="address" class="form-control" required></div>
                                 </div>
                                 <div class="d-grid mt-4">
                                     <button type="submit" class="btn btn-primary">Register</button>
