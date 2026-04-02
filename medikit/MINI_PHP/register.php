@@ -13,11 +13,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $dob       = mysqli_real_escape_string($conn, $_POST['date_of_birth']);
     $email = trim(mysqli_real_escape_string($conn, $_POST['email']));
     $gender    = mysqli_real_escape_string($conn, $_POST['gender']);
-    if ($gender === "Male") {
-        $gender = "M";
-    } elseif ($gender === "Female") {
-        $gender = "F";
-    }
     $address   = mysqli_real_escape_string($conn, $_POST['address']);
     $password  = $_POST['password'];
     $cpassword = $_POST['cpassword'];

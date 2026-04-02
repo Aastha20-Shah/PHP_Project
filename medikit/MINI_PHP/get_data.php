@@ -1,6 +1,9 @@
 <?php
 session_start();
 include('config.php');
+include('profile_image_helpers.php');
+
+medikit_ensure_profile_image_schema($conn);
 
 if (!function_exists('medikit_fetch_slots_for_date')) {
     function medikit_fetch_slots_for_date($conn, $doctor_id, $selected_date)
@@ -20,6 +23,19 @@ if (!function_exists('medikit_fetch_slots_for_date')) {
             return [
                 'status' => 'invalid',
                 'message' => 'Unable to read the selected date.',
+                'total' => 0,
+                'periods' => []
+            ];
+        }
+
+        // Prevent showing slots for past dates
+        $today_date = date('Y-m-d');
+        $selected_day_start = strtotime($selected_date . ' 00:00:00');
+        $today_start = strtotime($today_date . ' 00:00:00');
+        if ($selected_day_start !== false && $today_start !== false && $selected_day_start < $today_start) {
+            return [
+                'status' => 'past_date',
+                'message' => 'Please choose a current or future date.',
                 'total' => 0,
                 'periods' => []
             ];
@@ -46,7 +62,7 @@ if (!function_exists('medikit_fetch_slots_for_date')) {
 
         $booked_stmt = $conn->prepare("
             SELECT time_id FROM visit_booking
-            WHERE doctor_id = ? AND appointment_date = ? AND (status = 'accepted' OR status = 'pending')
+            WHERE doctor_id = ? AND appointment_date = ? AND status IN ('pending','accepted','visited')
         ");
         $booked_stmt->bind_param("is", $doctor_id, $selected_date);
         $booked_stmt->execute();
@@ -80,11 +96,28 @@ if (!function_exists('medikit_fetch_slots_for_date')) {
             'evening' => []
         ];
 
+        $is_today = ($selected_date === $today_date);
+        $now_ts = time();
+        $unbooked_count = 0;
+        $past_unbooked_count = 0;
+
         while ($row = $time_result->fetch_assoc()) {
             $time_id = intval($row['id']);
             if (in_array($time_id, $booked_slots, true)) {
                 continue;
             }
+
+            $unbooked_count++;
+
+            // If selecting today's date, hide any time slots that already passed
+            if ($is_today) {
+                $slot_start_ts = strtotime($selected_date . ' ' . $row['start_time']);
+                if ($slot_start_ts !== false && $slot_start_ts <= $now_ts) {
+                    $past_unbooked_count++;
+                    continue;
+                }
+            }
+
             $hour = intval(date('H', strtotime($row['start_time'])));
             $start_label = date("h:i A", strtotime($row['start_time']));
             $range_label = date("h:i A", strtotime($row['start_time'])) . " - " . date("h:i A", strtotime($row['end_time']));
@@ -106,6 +139,14 @@ if (!function_exists('medikit_fetch_slots_for_date')) {
         $total = count($periods['morning']) + count($periods['afternoon']) + count($periods['evening']);
 
         if ($total === 0) {
+            if ($is_today && $unbooked_count > 0 && $past_unbooked_count === $unbooked_count) {
+                return [
+                    'status' => 'fully_booked',
+                    'message' => 'No slots available for today.',
+                    'total' => 0,
+                    'periods' => []
+                ];
+            }
             return [
                 'status' => 'fully_booked',
                 'message' => 'All slots are booked for this date.',
@@ -239,6 +280,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'search_doctors') {
     }
 
     $query = "SELECT u.id, u.firstname, u.lastname, u.address, u.phone_number, u.experience_years, c.category_name,
+                     MAX(u.profile_image) AS profile_image,
                      GROUP_CONCAT(DISTINCT s.doctor_speciality SEPARATOR ', ') AS doctor_specialities
               FROM users u
               INNER JOIN category c ON u.category_id = c.id
@@ -272,11 +314,22 @@ if (isset($_POST['action']) && $_POST['action'] == 'search_doctors') {
             $phone = htmlspecialchars($doc['phone_number']);
             $doctor_id = intval($doc['id']);
 
+            $profile_image = (string)($doc['profile_image'] ?? '');
+            $profile_image = str_replace('\\', '/', $profile_image);
+            $profile_image = ltrim($profile_image, '/');
+            $has_photo = ($profile_image !== ''
+                && strpos($profile_image, 'uploads/doctors/') === 0
+                && file_exists(__DIR__ . '/' . $profile_image));
+
+            $avatar_inner = $has_photo
+                ? '<img src="' . htmlspecialchars($profile_image) . '" alt="Dr. ' . $name . '" style="width:100%;height:100%;object-fit:cover;display:block;">'
+                : $initials;
+
             echo '<div class="card mb-3 shadow-sm doctor-card" style="border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">';
             echo '  <div class="card-body p-4">';
             echo '    <div class="row align-items-center">';
             echo '      <div class="col-md-2 text-center mb-3 mb-md-0">';
-            echo '        <div class="doctor-avatar rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 80px; height: 80px; font-size: 28px; background: #e8f0fe; color: #1a76d1;">' . $initials . '</div>';
+            echo '        <div class="doctor-avatar rounded-circle d-flex align-items-center justify-content-center mx-auto overflow-hidden" style="width: 80px; height: 80px; font-size: 28px; background: #e8f0fe; color: #1a76d1;">' . $avatar_inner . '</div>';
             echo '      </div>';
             echo '      <div class="col-md-6 border-end">';
             echo '        <h5 class="fw-bold mb-1"><a href="doctor_details.php?doctor_id=' . $doctor_id . '" class="text-primary text-decoration-none">Dr. ' . $name . '</a></h5>';
@@ -312,7 +365,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'get_booking_form') {
     }
 
     $doc_stmt = $conn->prepare("
-        SELECT firstname, lastname, address, phone_number, experience_years, clinic_name
+        SELECT firstname, lastname, address, phone_number, experience_years, clinic_name, profile_image
         FROM users
         WHERE id = ?
         LIMIT 1
@@ -325,6 +378,8 @@ if (isset($_POST['action']) && $_POST['action'] == 'get_booking_form') {
         echo '<div class="alert alert-danger mb-0"><p class="mb-0">Doctor not found.</p></div>';
         exit;
     }
+
+    $doctor['profile_image'] = $doctor['profile_image'] ?? '';
 
     $spec_r = mysqli_query(
         $conn,
@@ -343,8 +398,15 @@ if (isset($_POST['action']) && $_POST['action'] == 'get_booking_form') {
     $is_logged_in = isset($_SESSION['patient_id']);
     $initials = strtoupper(substr($doctor['firstname'], 0, 1) . substr($doctor['lastname'], 0, 1));
 
+    $profile_image = (string)($doctor['profile_image'] ?? '');
+    $profile_image = str_replace('\\', '/', $profile_image);
+    $profile_image = ltrim($profile_image, '/');
+    $has_photo = ($profile_image !== ''
+        && strpos($profile_image, 'uploads/doctors/') === 0
+        && file_exists(__DIR__ . '/' . $profile_image));
+
     $day_cards = [];
-    for ($i = 0; $i < 3; $i++) {
+    for ($i = 0; $i < 7; $i++) {
         $timestamp = strtotime("+$i days");
         $date_val = date('Y-m-d', $timestamp);
         $display_day = ($i == 0) ? "Today" : (($i == 1) ? "Tomorrow" : date('D, j M', $timestamp));
@@ -361,11 +423,17 @@ if (isset($_POST['action']) && $_POST['action'] == 'get_booking_form') {
     }
     $is_sidebar_layout = ($layout === 'sidebar');
     ob_start();
-    ?>
+?>
     <div class="slot-booking-card shadow-sm <?php echo $is_sidebar_layout ? 'slot-booking-card-sidebar' : ''; ?>" id="booking-form-<?php echo $doctor_id; ?>">
         <?php if (!$is_sidebar_layout): ?>
             <div class="slot-card-header d-flex flex-wrap align-items-center">
-                <div class="slot-avatar me-3"><?php echo htmlspecialchars($initials); ?></div>
+                <div class="slot-avatar me-3" style="overflow:hidden;">
+                    <?php if ($has_photo): ?>
+                        <img src="<?php echo htmlspecialchars($profile_image); ?>" alt="Dr. <?php echo htmlspecialchars($doctor['firstname'] . ' ' . $doctor['lastname']); ?>" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;">
+                    <?php else: ?>
+                        <?php echo htmlspecialchars($initials); ?>
+                    <?php endif; ?>
+                </div>
                 <div class="flex-grow-1">
                     <h5 class="mb-1">Dr. <?php echo htmlspecialchars($doctor['firstname'] . ' ' . $doctor['lastname']); ?></h5>
                     <div class="text-muted small"><?php echo intval($doctor['experience_years']); ?> years experience overall</div>
@@ -447,62 +515,66 @@ if (isset($_POST['action']) && $_POST['action'] == 'get_booking_form') {
     </div>
 
     <script>
-    (function($) {
-        var dr = <?php echo $doctor_id; ?>;
-        var $dayTabs = $("#days_" + dr + " .slot-day-pill");
-        var $slotsWrap = $("#slots_" + dr);
-        var $final = $("#final_" + dr);
-        var $dateInput = $("#appt_date_" + dr);
-        var $timeInput = $("#time_slot_" + dr);
-        var $summaryDate = $("#summary_date_" + dr);
-        var $summaryTime = $("#summary_time_" + dr);
-        var loader = '<div class="slot-message text-center"><i class="fas fa-spinner fa-spin me-2"></i>Loading slots...</div>';
+        (function($) {
+            var dr = <?php echo $doctor_id; ?>;
+            var $dayTabs = $("#days_" + dr + " .slot-day-pill");
+            var $slotsWrap = $("#slots_" + dr);
+            var $final = $("#final_" + dr);
+            var $dateInput = $("#appt_date_" + dr);
+            var $timeInput = $("#time_slot_" + dr);
+            var $summaryDate = $("#summary_date_" + dr);
+            var $summaryTime = $("#summary_time_" + dr);
+            var loader = '<div class="slot-message text-center"><i class="fas fa-spinner fa-spin me-2"></i>Loading slots...</div>';
 
-        function loadSlots(date) {
-            $slotsWrap.html(loader);
-            $.post("get_data.php", { action: "get_times", doctor_id: dr, selected_date: date })
-                .done(function(html) {
-                    $slotsWrap.html(html);
-                })
-                .fail(function() {
-                    $slotsWrap.html('<div class="slot-message text-danger text-center">Unable to load slots.</div>');
-                });
-        }
-
-        $dayTabs.on("click", function() {
-            var $tab = $(this);
-            $dayTabs.removeClass("active");
-            $tab.addClass("active");
-            var date = $tab.data("date");
-            var label = $tab.find(".slot-day-label").text();
-            $dateInput.val(date);
-            $timeInput.val("");
-            $summaryDate.text(label + " (" + date + ")");
-            $summaryTime.text("Pick a slot");
-            $final.removeClass("show");
-            loadSlots(date);
-        });
-
-        $slotsWrap.on("click", ".slot-btn", function() {
-            var $btn = $(this);
-            $slotsWrap.find(".slot-btn").removeClass("selected");
-            $btn.addClass("selected");
-            $timeInput.val($btn.data("time-id"));
-            $summaryTime.text($btn.text());
-            $final.addClass("show");
-        });
-
-        $("#booking-form-" + dr + "-form").on("submit", function(e) {
-            if (!$dateInput.val() || !$timeInput.val()) {
-                e.preventDefault();
-                alert("Please select a date and time slot to continue.");
+            function loadSlots(date) {
+                $slotsWrap.html(loader);
+                $.post("get_data.php", {
+                        action: "get_times",
+                        doctor_id: dr,
+                        selected_date: date
+                    })
+                    .done(function(html) {
+                        $slotsWrap.html(html);
+                    })
+                    .fail(function() {
+                        $slotsWrap.html('<div class="slot-message text-danger text-center">Unable to load slots.</div>');
+                    });
             }
-        });
 
-        $dayTabs.first().trigger("click");
-    })(jQuery);
+            $dayTabs.on("click", function() {
+                var $tab = $(this);
+                $dayTabs.removeClass("active");
+                $tab.addClass("active");
+                var date = $tab.data("date");
+                var label = $tab.find(".slot-day-label").text();
+                $dateInput.val(date);
+                $timeInput.val("");
+                $summaryDate.text(label + " (" + date + ")");
+                $summaryTime.text("Pick a slot");
+                $final.removeClass("show");
+                loadSlots(date);
+            });
+
+            $slotsWrap.on("click", ".slot-btn", function() {
+                var $btn = $(this);
+                $slotsWrap.find(".slot-btn").removeClass("selected");
+                $btn.addClass("selected");
+                $timeInput.val($btn.data("time-id"));
+                $summaryTime.text($btn.text());
+                $final.addClass("show");
+            });
+
+            $("#booking-form-" + dr + "-form").on("submit", function(e) {
+                if (!$dateInput.val() || !$timeInput.val()) {
+                    e.preventDefault();
+                    alert("Please select a date and time slot to continue.");
+                }
+            });
+
+            $dayTabs.first().trigger("click");
+        })(jQuery);
     </script>
-    <?php
+<?php
     echo ob_get_clean();
     exit;
 }

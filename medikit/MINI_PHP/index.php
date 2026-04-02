@@ -29,13 +29,53 @@ if (isset($_POST['book'])) {
         $note             = mysqli_real_escape_string($conn, $_POST['note']);
         $appointment_date = mysqli_real_escape_string($conn, $_POST['appointment_date']);
 
+        // Prevent booking past dates/times
+        $appointment_date_clean = trim((string)($_POST['appointment_date'] ?? ''));
+        $appointment_day_start = strtotime($appointment_date_clean . ' 00:00:00');
+        $today_date = date('Y-m-d');
+        $today_start = strtotime($today_date . ' 00:00:00');
+        if ($appointment_day_start === false || $today_start === false || $appointment_day_start < $today_start) {
+            $_SESSION['message'] = 'Please choose a current or future date.';
+            $_SESSION['message_type'] = 'warning';
+            header("Location: index.php");
+            exit();
+        }
+
+        $day_of_week = (int)date('N', $appointment_day_start);
+        $time_stmt = $conn->prepare("SELECT dat.start_time FROM doctor_available_time dat INNER JOIN doctor_available_day dad ON dat.day_id = dad.id WHERE dat.id = ? AND dad.doctor_id = ? AND dad.day = ? LIMIT 1");
+        $slot_start_time = '';
+        if ($time_stmt) {
+            $time_stmt->bind_param('iii', $time_id, $doctor_id_post, $day_of_week);
+            $time_stmt->execute();
+            $time_row = $time_stmt->get_result()->fetch_assoc();
+            $slot_start_time = (string)($time_row['start_time'] ?? '');
+            $time_stmt->close();
+        }
+
+        if ($slot_start_time === '') {
+            $_SESSION['message'] = 'Invalid time slot. Please select again.';
+            $_SESSION['message_type'] = 'warning';
+            header("Location: index.php");
+            exit();
+        }
+
+        if ($appointment_date_clean === $today_date) {
+            $slot_start_ts = strtotime($appointment_date_clean . ' ' . $slot_start_time);
+            if ($slot_start_ts !== false && $slot_start_ts <= time()) {
+                $_SESSION['message'] = 'This time slot is no longer available. Please choose another.';
+                $_SESSION['message_type'] = 'warning';
+                header("Location: index.php");
+                exit();
+            }
+        }
+
         $check = mysqli_query(
             $conn,
             "SELECT id FROM visit_booking
               WHERE doctor_id        = '$doctor_id_post'
                 AND time_id          = '$time_id'
                 AND appointment_date = '$appointment_date'
-                AND status IN ('pending','accepted')"
+                                AND status IN ('pending','accepted','visited')"
         );
 
         if (mysqli_num_rows($check) > 0) {
@@ -43,11 +83,11 @@ if (isset($_POST['book'])) {
             $_SESSION['message_type'] = "warning";
         } else {
             $ins = "INSERT INTO visit_booking
-                        (patient_id, doctor_id, speciality_id, time_id, Note, appointment_date)
+                        (patient_id, doctor_id, speciality_id, time_id, Note, appointment_date, status, patient_notified)
                     VALUES
-                        ('$patient_id','$doctor_id_post','$speciality_id','$time_id','$note','$appointment_date')";
+                        ('$patient_id','$doctor_id_post','$speciality_id','$time_id','$note','$appointment_date','accepted',1)";
             if (mysqli_query($conn, $ins)) {
-                $_SESSION['message']      = "Appointment request submitted! Awaiting doctor confirmation.";
+                $_SESSION['message']      = "Slot booked successfully.";
                 $_SESSION['message_type'] = "success";
             } else {
                 $_SESSION['message']      = "Error submitting appointment: " . mysqli_error($conn);
@@ -72,8 +112,9 @@ if ($is_logged_in && empty($msg)) {
         if ($row) {
             $date = date("F j, Y", strtotime($row['appointment_date']));
             switch ($row['status']) {
+                case 'pending':
                 case 'accepted':
-                    $msg      = "🎉 Your appointment for <strong>$date</strong> has been accepted! The doctor is waiting for you.";
+                    $msg      = "Your appointment for <strong>$date</strong> is booked.";
                     $msg_type = "success";
                     break;
                 case 'rejected':
@@ -336,19 +377,19 @@ $categories = mysqli_query($conn, "SELECT * FROM category ORDER BY category_name
                 <?php
                 $category_photo_map = [
                     'cardiology'       => 'https://images.unsplash.com/photo-1551190822-a9333d879b1f?auto=format&fit=crop&w=900&q=80',
-                    'dentistry'        => 'https://images.unsplash.com/photo-1588776814546-b1f57f4d0f57?auto=format&fit=crop&w=900&q=80',
+                    'dentistry'        => 'https://plus.unsplash.com/premium_photo-1682097288491-7e926a30cd0b?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjF8fGRlbnRpc3R8ZW58MHx8MHx8fDA%3D',
                     'dermatology'      => 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=900&q=80',
                     'general medicine' => 'https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=900&q=80',
-                    'gynecology'       => 'https://images.unsplash.com/photo-1584516150909-c43483ee7935?auto=format&fit=crop&w=900&q=80',
+                    'gynecology'       => 'https://plus.unsplash.com/premium_photo-1661606400554-a2055d50ee08?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8Z3luZWNvbG9naXN0fGVufDB8fDB8fHww',
                     'neurology'        => 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=900&q=80',
-                    'oncology'         => 'https://images.unsplash.com/photo-1631815588090-d1bcbe9a7b5c?auto=format&fit=crop&w=900&q=80',
-                    'pediatric'        => 'https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?auto=format&fit=crop&w=900&q=80',
-                    'ortho'            => 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=900&q=80',
+                    'oncology'         => 'https://media.istockphoto.com/id/1496004272/photo/indian-daughter-visit-her-elderly-mother-cancer-patient-undergoing-course-of-chemotherapy-in.webp?a=1&b=1&s=612x612&w=0&k=20&c=_q06t_lCxakr5eM7mvkylFtLK55fXS4QEtiGCzYgxoc=',
+                    'pediatric'        => 'https://media.istockphoto.com/id/508509000/photo/professional-pediatrician-examining-infant.webp?a=1&b=1&s=612x612&w=0&k=20&c=oBlnu93leoqIBf_oV4jysrjLqQ1IYfHQfwMQoNDz9bA=',
+                    'ortho'            => 'https://plus.unsplash.com/premium_photo-1661436735845-d136f5778f14?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8b3J0aG9wZWRpY3N8ZW58MHx8MHx8fDA%3D',
                     'physio'           => 'https://images.unsplash.com/photo-1580281657521-72f9e8f5f2a8?auto=format&fit=crop&w=900&q=80',
                     'eye'              => 'https://images.unsplash.com/photo-1584982751601-97dcc096659c?auto=format&fit=crop&w=900&q=80',
-                    'ent'              => 'https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=900&q=80',
-                    'psychiatry'       => 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=900&q=80',
-                    'ophthalmology'    => 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=900&q=80',
+                    'ent'              => 'https://media.istockphoto.com/id/649286422/photo/happy-little-boy-having-ear-exam.webp?a=1&b=1&s=612x612&w=0&k=20&c=oFFjx78OvcRtyQiMy-G6GcYkp1yieHMOhhBicAyJnwA=',
+                    'psychiatry'       => 'https://plus.unsplash.com/premium_photo-1664378616928-dc6842677183?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8cHN5Y2hvbG9naXN0fGVufDB8fDB8fHww',
+                    'ophthalmology'    => 'https://plus.unsplash.com/premium_photo-1677333508720-c37038cbf8be?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8b3BodGhhbG1vbG9naXN0fGVufDB8fDB8fHww',
                 ];
                 $category_desc_map = [
                     'cardiology'       => 'Heart and blood vessel care by experienced specialists.',

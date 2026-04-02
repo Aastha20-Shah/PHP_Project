@@ -1,6 +1,9 @@
 <?php
 session_start();
 include("config.php");
+include("profile_image_helpers.php");
+
+medikit_ensure_profile_image_schema($conn);
 
 $doctor_id = isset($_GET['doctor_id']) ? intval($_GET['doctor_id']) : 0;
 if ($doctor_id <= 0) {
@@ -27,6 +30,8 @@ if ($result->num_rows == 0) {
     exit;
 }
 $doctor = $result->fetch_assoc();
+
+$doctor['profile_image'] = $doctor['profile_image'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -69,6 +74,7 @@ $doctor = $result->fetch_assoc();
             align-items: center;
             justify-content: center;
             margin: 0 auto;
+            overflow: hidden;
         }
 
         .section-title {
@@ -98,9 +104,20 @@ $doctor = $result->fetch_assoc();
                 <div class="col-md-2 text-center mb-3 mb-md-0">
                     <?php
                     $initials = strtoupper(substr($doctor['firstname'], 0, 1) . substr($doctor['lastname'], 0, 1));
+
+                    $profile_image = (string)($doctor['profile_image'] ?? '');
+                    $profile_image = str_replace('\\', '/', $profile_image);
+                    $profile_image = ltrim($profile_image, '/');
+                    $has_photo = ($profile_image !== ''
+                        && strpos($profile_image, 'uploads/doctors/') === 0
+                        && file_exists(__DIR__ . '/' . $profile_image));
                     ?>
                     <div class="avatar-circle mx-auto mx-md-0 shadow">
-                        <?= $initials ?>
+                        <?php if ($has_photo): ?>
+                            <img src="<?= htmlspecialchars($profile_image) ?>" alt="Dr. <?= htmlspecialchars($doctor['firstname'] . ' ' . $doctor['lastname']) ?>" style="width:100%;height:100%;object-fit:cover;display:block;">
+                        <?php else: ?>
+                            <?= htmlspecialchars($initials) ?>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <div class="col-md-10">

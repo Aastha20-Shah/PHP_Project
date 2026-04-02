@@ -1,6 +1,10 @@
 <?php
 session_start();
 include("config.php");
+include("profile_image_helpers.php");
+include("doctor_notification_helpers.php");
+
+medikit_ensure_profile_image_schema($conn);
 
 if (!isset($_SESSION['doctor_id'])) {
     header("Location: login.php");
@@ -8,6 +12,9 @@ if (!isset($_SESSION['doctor_id'])) {
 }
 
 $doctor_id = $_SESSION['doctor_id'];
+
+$notifications = medikit_doctor_unseen_notifications_list($conn, (int)$doctor_id, 5);
+$notification_count = medikit_doctor_unseen_notifications_count($conn, (int)$doctor_id);
 
 /* =======================
    DASHBOARD COUNTS
@@ -51,7 +58,7 @@ $visitedAppointments = mysqli_fetch_assoc(mysqli_query(
 // Doctor Info
 $doctor = mysqli_fetch_assoc(mysqli_query(
     $conn,
-    "SELECT u.firstname, u.lastname, u.email, u.category_id,
+    "SELECT u.firstname, u.lastname, u.profile_image, u.email, u.category_id,
      GROUP_CONCAT(s.doctor_speciality SEPARATOR ', ') AS specialities,
      COUNT(ds.id) as speciality_count
      FROM users u
@@ -60,6 +67,11 @@ $doctor = mysqli_fetch_assoc(mysqli_query(
      WHERE u.id = $doctor_id
      GROUP BY u.id"
 ));
+
+if (is_array($doctor)) {
+    // DB schema does not include a profile_image column; keep the UI checks safe.
+    $doctor['profile_image'] = $doctor['profile_image'] ?? '';
+}
 
 // Check if profile setup is needed
 $needsProfileSetup = !$doctor['category_id'] || $doctor['speciality_count'] == 0;
@@ -77,7 +89,7 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doctor Dashboard - Cliniva</title>
+    <title>Doctor Dashboard - Medikit</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -742,17 +754,58 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
             </button>
         </div>
         <div class="header-right">
-            <button class="header-icon">
-                <i class="fas fa-expand"></i>
-            </button>
-            <button class="header-icon">
-                <i class="fas fa-bell"></i>
-                <span class="notification-badge">3</span>
-            </button>
+            <div class="dropdown" style="position: relative;">
+                <button class="header-icon" type="button" data-notif-toggle aria-label="Notifications" aria-expanded="false">
+                    <i class="fas fa-bell"></i>
+                    <?php if (!empty($notification_count)): ?>
+                        <span class="notification-badge"><?= (int)$notification_count ?></span>
+                    <?php endif; ?>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end p-0" data-notif-menu style="min-width: 320px; max-height: 380px; overflow: auto;">
+                    <div class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold">New Appointments</span>
+                        <?php if (!empty($notification_count)): ?>
+                            <form method="POST" action="doctor_notifications.php" class="m-0">
+                                <input type="hidden" name="action" value="clear_all">
+                                <input type="hidden" name="redirect" value="<?= htmlspecialchars(basename($_SERVER['PHP_SELF'])) ?>">
+                                <input type="hidden" name="redirect_qs" value="<?= htmlspecialchars(isset($_SERVER['QUERY_STRING']) && $_SERVER['QUERY_STRING'] !== '' ? '?' . $_SERVER['QUERY_STRING'] : '') ?>">
+                                <button type="submit" class="btn btn-link btn-sm p-0 text-decoration-none">Clear all</button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if (empty($notifications)): ?>
+                        <div class="px-3 py-3 text-center text-muted small">No new appointments.</div>
+                    <?php else: ?>
+                        <?php foreach ($notifications as $n): ?>
+                            <?php
+                            $n_patient = trim((string)($n['patient_firstname'] ?? '') . ' ' . (string)($n['patient_lastname'] ?? ''));
+                            $n_date = '-';
+                            if (!empty($n['appointment_date'])) {
+                                $n_date = date('M j, Y', strtotime((string)$n['appointment_date']));
+                            }
+                            $n_time = '';
+                            if (!empty($n['start_time'])) {
+                                $n_time = date('g:i A', strtotime((string)$n['start_time']));
+                            }
+                            ?>
+                            <div class="px-3 py-2 border-bottom">
+                                <div class="fw-semibold small"><?= htmlspecialchars($n_patient !== '' ? $n_patient : 'New appointment') ?></div>
+                                <div class="text-muted small"><?= htmlspecialchars($n_date) ?><?= $n_time !== '' ? ' • ' . htmlspecialchars($n_time) : '' ?></div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
             <img src="https://flagcdn.com/w40/us.png" alt="US" class="flag-icon">
             <div class="user-profile">
                 <span class="user-name"><?= htmlspecialchars($doctor['firstname'] . ' ' . $doctor['lastname']) ?></span>
-                <img src="https://ui-avatars.com/api/?name=<?= urlencode($doctor['firstname'] . '+' . $doctor['lastname']) ?>&background=5a8dee&color=fff" alt="Profile" class="user-avatar">
+                <?php
+                $doctor_avatar_src = (!empty($doctor['profile_image']) && file_exists(__DIR__ . '/' . $doctor['profile_image']))
+                    ? $doctor['profile_image']
+                    : "https://ui-avatars.com/api/?name=" . urlencode($doctor['firstname'] . '+' . $doctor['lastname']) . "&background=5a8dee&color=fff";
+                ?>
+                <img src="<?= htmlspecialchars($doctor_avatar_src) ?>" alt="Profile" class="user-avatar">
             </div>
         </div>
     </div>
@@ -761,19 +814,30 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
     <div class="sidebar">
         <div class="doctor-profile-sidebar">
             <div class="profile-image-wrapper">
-                <input type="file" id="profileImageInput" accept="image/*" style="display: none;">
-                <label for="profileImageInput" style="cursor: pointer; display: block; width: 115px; height: 115px; margin: 0 auto;">
-                    <div class="profile-image-container" id="sidebarProfileImage">
-                        <?php if (!empty($doctor['profile_image']) && file_exists($doctor['profile_image'])): ?>
-                            <img src="<?= htmlspecialchars($doctor['profile_image']) ?>" alt="Profile" class="profile-image">
-                        <?php else: ?>
-                            <div class="profile-placeholder">
-                                <?= strtoupper(substr($doctor['firstname'], 0, 1)) ?>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                </label>
+                <form id="profileImageForm" action="doctor_profile_image.php" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="action" value="upload">
+                    <input type="hidden" name="redirect" value="<?= htmlspecialchars(basename($_SERVER['PHP_SELF'])) ?>">
+                    <input type="file" name="profile_image" id="profileImageInput" accept="image/*" style="display: none;">
+                    <label for="profileImageInput" style="cursor: pointer; display: block; width: 115px; height: 115px; margin: 0 auto;">
+                        <div class="profile-image-container" id="sidebarProfileImage">
+                            <?php if (!empty($doctor['profile_image']) && file_exists(__DIR__ . '/' . $doctor['profile_image'])): ?>
+                                <img src="<?= htmlspecialchars($doctor['profile_image']) ?>" alt="Profile" class="profile-image">
+                            <?php else: ?>
+                                <div class="profile-placeholder">
+                                    <?= strtoupper(substr($doctor['firstname'], 0, 1)) ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </label>
+                </form>
             </div>
+            <?php if (!empty($doctor['profile_image']) && file_exists(__DIR__ . '/' . $doctor['profile_image'])): ?>
+                <form method="POST" action="doctor_profile_image.php" class="text-center mt-2" onsubmit="return confirm('Remove profile photo?');">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="redirect" value="<?= htmlspecialchars(basename($_SERVER['PHP_SELF'])) ?>">
+                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                </form>
+            <?php endif; ?>
             <div class="profile-name"><?= htmlspecialchars($doctor['firstname'] . ' ' . $doctor['lastname']) ?></div>
             <div class="profile-role">DOCTOR</div>
         </div>
@@ -788,11 +852,11 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
                 <i class="fas fa-calendar-check"></i>
                 <span>Appointments</span>
             </a>
-            <a href="#" class="nav-item">
-                <i class="fas fa-user-md"></i>
-                <span>Doctors</span>
+            <a href="add_day_time.php" class="nav-item">
+                <i class="fas fa-clock"></i>
+                <span>Day &amp; Time</span>
             </a>
-            <a href="#" class="nav-item">
+            <a href="doctor_patients.php" class="nav-item">
                 <i class="fas fa-users"></i>
                 <span>Patients</span>
             </a>
@@ -800,7 +864,7 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
                 <i class="fas fa-chart-line"></i>
                 <span>Analytics</span>
             </a>
-            <a href="#" class="nav-item">
+            <a href="doctor_billing.php" class="nav-item">
                 <i class="fas fa-file-invoice-dollar"></i>
                 <span>Billing</span>
             </a>
@@ -829,6 +893,14 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
             </div>
         </div>
 
+        <?php if (isset($_SESSION['doctor_photo_message'])): ?>
+            <div class="alert alert-<?= htmlspecialchars($_SESSION['doctor_photo_message_type'] ?? 'info') ?> alert-dismissible fade show mx-3" role="alert">
+                <?= htmlspecialchars($_SESSION['doctor_photo_message']) ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <?php unset($_SESSION['doctor_photo_message'], $_SESSION['doctor_photo_message_type']); ?>
+        <?php endif; ?>
+
         <!-- Welcome Card -->
         <div class="welcome-card">
             <div class="row align-items-center g-3">
@@ -854,7 +926,7 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
                     </div>
                 </div>
                 <div class="col-md-2 text-end">
-                    <img src="Screenshot_2026-02-18_123531-removebg-preview.png" alt="Doctors" class="doctor-illustration" style="width: 175px;margin-left: 110px;height: 175px;margin-top: 55px;">
+                    <img src="Screenshot_2026-02-18_123531-removebg-preview.png" alt="Illustration" class="doctor-illustration" style="width: 175px;margin-left: 110px;height: 175px;margin-top: 55px;">
                 </div>
             </div>
         </div>
@@ -987,7 +1059,7 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
             <!-- Right Column - Profile Card -->
             <div class="right-profile-card">
                 <div class="card text-center">
-                    <?php if (!empty($doctor['profile_image']) && file_exists($doctor['profile_image'])): ?>
+                    <?php if (!empty($doctor['profile_image']) && file_exists(__DIR__ . '/' . $doctor['profile_image'])): ?>
                         <img src="<?= htmlspecialchars($doctor['profile_image']) ?>" alt="Profile" class="profile-card-image" id="profileCardImage">
                     <?php else: ?>
                         <div class="profile-card-placeholder" id="profileCardImage">
@@ -1194,32 +1266,53 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
             });
         });
 
-        // Profile Image Upload Handler
-        document.getElementById('profileImageInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const sidebarContainer = document.getElementById('sidebarProfileImage');
-                    const cardImg = document.getElementById('profileCardImage');
+        // Profile Image Upload Handler (submit to server)
+        const profileImageInput = document.getElementById('profileImageInput');
+        const profileImageForm = document.getElementById('profileImageForm');
+        if (profileImageInput && profileImageForm) {
+            profileImageInput.addEventListener('change', function() {
+                if (profileImageInput.files && profileImageInput.files[0]) {
+                    profileImageForm.submit();
+                }
+            });
+        }
 
-                    // Update sidebar profile
-                    if (sidebarContainer) {
-                        sidebarContainer.innerHTML = `<img src="${event.target.result}" alt="Profile" class="profile-image">`;
-                    }
+        // Notifications dropdown (no Bootstrap JS required)
+        (function() {
+            const toggle = document.querySelector('[data-notif-toggle]');
+            const menu = document.querySelector('[data-notif-menu]');
+            if (!toggle || !menu) return;
 
-                    // Update card profile
-                    if (cardImg) {
-                        if (cardImg.tagName === 'IMG') {
-                            cardImg.src = event.target.result;
-                        } else {
-                            cardImg.outerHTML = `<img src="${event.target.result}" alt="Profile" class="profile-card-image" id="profileCardImage">`;
-                        }
-                    }
-                };
-                reader.readAsDataURL(file);
+            function closeMenu() {
+                menu.classList.remove('show');
+                toggle.setAttribute('aria-expanded', 'false');
             }
-        });
+
+            toggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const willOpen = !menu.classList.contains('show');
+                if (willOpen) {
+                    menu.classList.add('show');
+                    toggle.setAttribute('aria-expanded', 'true');
+                } else {
+                    closeMenu();
+                }
+            });
+
+            menu.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+
+            document.addEventListener('click', function() {
+                closeMenu();
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeMenu();
+                }
+            });
+        })();
     </script>
 
 </body>

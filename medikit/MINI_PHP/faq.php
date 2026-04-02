@@ -28,7 +28,7 @@ include('header.php');
                     </h2>
                     <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faqAccordion">
                         <div class="accordion-body text-muted">
-                            You can view the status of all your bookings on the "My Appointments" page, accessible from the "Pages" dropdown in the main menu. The status will show as Pending, Accepted, or Rejected.
+                            You can view the status of all your bookings on the "My Appointments" page, accessible from the "Pages" dropdown in the main menu. The status will show as Upcoming, Completed, or Cancelled.
                         </div>
                     </div>
                 </div>
