@@ -128,6 +128,27 @@ $clinic_email = trim((string)($bill['clinic_email'] ?? ''));
 
 <?php include('header.php'); ?>
 
+<style>
+  @media print {
+
+    nav.navbar,
+    footer,
+    .page-header,
+    .bill-actions {
+      display: none !important;
+    }
+
+    body {
+      background: #fff !important;
+    }
+
+    .card {
+      box-shadow: none !important;
+      border: 1px solid #e5e7eb !important;
+    }
+  }
+</style>
+
 <main class="container my-5">
   <?php if (!empty($schema_error)): ?>
     <div class="alert alert-danger">Billing table error: <?= htmlspecialchars($schema_error) ?></div>
@@ -149,7 +170,7 @@ $clinic_email = trim((string)($bill['clinic_email'] ?? ''));
               <div>
                 <div class="text-muted">Invoice</div>
                 <h4 class="fw-bold mb-1">#<?= htmlspecialchars($invoice_no) ?></h4>
-                <div class="text-muted small">Payment is done at clinic.</div>
+                <div class="text-muted small">Payment can be done at clinic or online.</div>
               </div>
               <div class="text-end">
                 <span class="badge rounded-pill fs-6 <?= htmlspecialchars($pay_badge) ?>"><?= htmlspecialchars($pay_text) ?></span>
@@ -220,8 +241,14 @@ $clinic_email = trim((string)($bill['clinic_email'] ?? ''));
               </table>
             </div>
 
-            <div class="d-flex justify-content-end mt-3">
+            <div class="d-flex justify-content-end gap-2 mt-3 bill-actions">
               <a href="my_appointments.php" class="btn btn-outline-primary">Back</a>
+              <?php if ($pay_status !== 'paid'): ?>
+                <button type="button" id="payOnlineBtn" class="btn btn-primary">
+                  <i class="fas fa-credit-card me-1"></i> Pay Online
+                </button>
+              <?php endif; ?>
+              <button type="button" class="btn btn-dark" onclick="window.print()"><i class="fas fa-download me-1"></i> Download</button>
             </div>
           </div>
         </div>
@@ -229,5 +256,106 @@ $clinic_email = trim((string)($bill['clinic_email'] ?? ''));
     </div>
   <?php endif; ?>
 </main>
+
+<?php if ($bill && $pay_status !== 'paid'): ?>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+    (function() {
+      const payBtn = document.getElementById('payOnlineBtn');
+      if (!payBtn) return;
+
+      const billId = <?= (int)($bill['bill_id'] ?? 0) ?>;
+      const originalHtml = payBtn.innerHTML;
+
+      function setBusy(isBusy) {
+        payBtn.disabled = isBusy;
+        payBtn.innerHTML = isBusy ? 'Processing…' : originalHtml;
+      }
+
+      payBtn.addEventListener('click', async function() {
+        try {
+          setBusy(true);
+
+          const body = new URLSearchParams({
+            bill_id: String(billId)
+          });
+
+          const res = await fetch('razorpay_create_order.php', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: body.toString()
+          });
+
+          const data = await res.json();
+          if (!data || !data.success) {
+            alert((data && data.message) ? data.message : 'Failed to start payment.');
+            setBusy(false);
+            return;
+          }
+
+          const options = {
+            key: data.key_id,
+            amount: data.amount,
+            currency: data.currency,
+            name: data.name,
+            description: data.description,
+            order_id: data.order_id,
+            prefill: data.prefill || {},
+            handler: async function(response) {
+              try {
+                const verifyBody = new URLSearchParams({
+                  bill_id: String(billId),
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature
+                });
+
+                const vres = await fetch('razorpay_verify_payment.php', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                  },
+                  body: verifyBody.toString()
+                });
+
+                const vdata = await vres.json();
+                if (vdata && vdata.success) {
+                  window.location.reload();
+                  return;
+                }
+
+                alert((vdata && vdata.message) ? vdata.message : 'Payment verification failed.');
+                setBusy(false);
+              } catch (e) {
+                console.error(e);
+                alert('Payment verification failed.');
+                setBusy(false);
+              }
+            },
+            modal: {
+              ondismiss: function() {
+                setBusy(false);
+              }
+            }
+          };
+
+          const rzp = new Razorpay(options);
+          rzp.on('payment.failed', function(resp) {
+            setBusy(false);
+            const msg = (resp && resp.error && resp.error.description) ? resp.error.description : 'Payment failed.';
+            alert(msg);
+          });
+          rzp.open();
+        } catch (e) {
+          console.error(e);
+          alert('Failed to start payment.');
+          setBusy(false);
+        }
+      });
+    })();
+  </script>
+<?php endif; ?>
 
 <?php include('footer.php'); ?>

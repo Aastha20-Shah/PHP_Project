@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 02, 2026 at 09:45 PM
+-- Generation Time: Apr 05, 2026 at 07:45 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,27 @@ SET time_zone = "+00:00";
 --
 -- Database: `doctor_appointment_db1`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `admin_users`
+--
+
+CREATE TABLE `admin_users` (
+  `id` int(11) NOT NULL,
+  `name` varchar(150) NOT NULL,
+  `email` varchar(190) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `admin_users`
+--
+
+INSERT INTO `admin_users` (`id`, `name`, `email`, `password`, `created_at`) VALUES
+(1, 'Aastha', 'shahaastha2024@gmail.com', '$2y$10$2ePOx9IObFFm18LRFhpJL.AxYlt9H6m05KMokp9B.SXIGtABLLi8a', '2026-04-03 18:26:16');
 
 -- --------------------------------------------------------
 
@@ -78,7 +99,83 @@ CREATE TABLE `clinic_bills` (
 INSERT INTO `clinic_bills` (`id`, `booking_id`, `doctor_id`, `patient_id`, `service_type`, `amount`, `payment_method`, `payment_status`, `created_at`, `updated_at`) VALUES
 (1, 76, 119, 187, 'Consultation', 10000.00, 'Credit Card', 'paid', '2026-04-02 15:53:19', '2026-04-02 15:53:19'),
 (2, 77, 119, 187, 'Consultation', 8000.00, 'Debit Card', 'paid', '2026-04-02 16:33:28', '2026-04-02 16:33:28'),
-(3, 79, 119, 187, 'Consultation', 15000.00, 'Cash', 'paid', '2026-04-02 19:24:11', '2026-04-02 19:41:07');
+(3, 79, 119, 187, 'Consultation', 15000.00, 'Cash', 'paid', '2026-04-02 19:24:11', '2026-04-02 19:41:07'),
+(4, 80, 120, 187, 'Consultation', 500.00, 'UPI', 'paid', '2026-04-03 17:11:15', '2026-04-03 17:11:15'),
+(5, 81, 121, 187, 'Consultation', 14000.00, 'Cash', 'paid', '2026-04-03 18:41:54', '2026-04-03 18:41:54'),
+(6, 82, 120, 187, 'Consultation', 200.00, 'Cash', 'paid', '2026-04-04 07:13:16', '2026-04-04 07:13:16'),
+(7, 83, 120, 187, 'Consultation', 1.00, 'UPI', 'paid', '2026-04-04 16:22:13', '2026-04-04 16:28:39'),
+(8, 84, 120, 187, 'Consultation', 1500.00, 'Online', 'paid', '2026-04-04 17:24:18', '2026-04-05 08:06:53'),
+(9, 85, 119, 188, 'Consultation', 20000.00, 'Cash', 'paid', '2026-04-05 13:41:25', '2026-04-05 13:41:25'),
+(10, 87, 119, 188, 'Consultation', 1500.00, 'Online', 'paid', '2026-04-05 14:03:29', '2026-04-05 16:18:37'),
+(11, 90, 119, 188, 'elfedfm', 600.00, 'Online', 'paid', '2026-04-05 16:36:22', '2026-04-05 16:36:22');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `clinic_bill_payments`
+--
+
+CREATE TABLE `clinic_bill_payments` (
+  `id` int(11) NOT NULL,
+  `bill_id` int(11) NOT NULL,
+  `booking_id` int(11) NOT NULL,
+  `doctor_id` int(11) NOT NULL,
+  `patient_id` int(11) NOT NULL,
+  `gateway` varchar(30) NOT NULL DEFAULT 'razorpay',
+  `amount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `currency` char(3) NOT NULL DEFAULT 'INR',
+  `razorpay_order_id` varchar(100) NOT NULL,
+  `razorpay_payment_id` varchar(100) DEFAULT NULL,
+  `razorpay_signature` varchar(255) DEFAULT NULL,
+  `razorpay_method` varchar(50) DEFAULT NULL,
+  `status` enum('created','paid','failed') NOT NULL DEFAULT 'created',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `paid_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `clinic_bill_payments`
+--
+
+INSERT INTO `clinic_bill_payments` (`id`, `bill_id`, `booking_id`, `doctor_id`, `patient_id`, `gateway`, `amount`, `currency`, `razorpay_order_id`, `razorpay_payment_id`, `razorpay_signature`, `razorpay_method`, `status`, `created_at`, `paid_at`) VALUES
+(1, 7, 83, 120, 187, 'razorpay', 1000.00, 'INR', 'order_SZTrWKJMlPF5UB', NULL, NULL, NULL, 'created', '2026-04-04 16:24:51', NULL),
+(2, 7, 83, 120, 187, 'razorpay', 1.00, 'INR', 'order_SZTukKpvRA9K77', 'pay_SZTvEHKjAfYfZT', '93cca69e25a0a8e13274ba9760ab4835171135cf5aa313c80ce25584d9b3cb46', 'upi', 'paid', '2026-04-04 16:27:54', '2026-04-04 16:28:39'),
+(3, 8, 84, 120, 187, 'razorpay', 1500.00, 'INR', 'order_SZju0ktJmAkK2v', 'pay_SZjuHBWV98FtC2', 'aefb01c56dcba864aea9027c55abfd80d21e56216ef88624f0b792ab4aaa416f', 'upi', 'paid', '2026-04-05 08:06:21', '2026-04-05 08:06:53'),
+(4, 10, 87, 119, 188, 'razorpay', 1500.00, 'INR', 'order_SZsHY7JCzVrKHW', 'pay_SZsHhEzPhxDhYi', '8ca92d7e8aa773be1ff2e29106522cbe03d40a20e93902c2e50b9206d5512829', 'upi', 'paid', '2026-04-05 16:18:12', '2026-04-05 16:18:37');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `clinic_prescriptions`
+--
+
+CREATE TABLE `clinic_prescriptions` (
+  `id` int(11) NOT NULL,
+  `booking_id` int(11) NOT NULL,
+  `doctor_id` int(11) NOT NULL,
+  `patient_id` int(11) NOT NULL,
+  `diagnosis` varchar(255) NOT NULL DEFAULT '',
+  `medications` text NOT NULL,
+  `dosage` varchar(100) NOT NULL DEFAULT '',
+  `frequency` varchar(100) NOT NULL DEFAULT '',
+  `duration` varchar(100) NOT NULL DEFAULT '',
+  `instructions` text DEFAULT NULL,
+  `status` enum('active','inactive') NOT NULL DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `clinic_prescriptions`
+--
+
+INSERT INTO `clinic_prescriptions` (`id`, `booking_id`, `doctor_id`, `patient_id`, `diagnosis`, `medications`, `dosage`, `frequency`, `duration`, `instructions`, `status`, `created_at`, `updated_at`) VALUES
+(1, 82, 120, 187, 'skdfnn', 'kdsfnds', '500', '8', '7', 'LSDFKD', 'active', '2026-04-04 07:12:50', '2026-04-04 07:12:50'),
+(2, 83, 120, 187, 'Danraff', '{\"items\":[{\"medicine\":\"sdnajdj\",\"dosage\":\"300\",\"frequency\":\"1-1-0\",\"duration\":\"12\",\"time\":\"after food\"},{\"medicine\":\"sdlfjdkf\",\"dosage\":\"500\",\"frequency\":\"0-1-1\",\"duration\":\"12\",\"time\":\"before food\"}]}', '', '', '', 'Eat fruit,drink water more', 'active', '2026-04-04 16:20:38', '2026-04-04 16:22:31'),
+(3, 84, 120, 187, 'Dark Spots', '{\"items\":[{\"medicine\":\"ksdfjjfs\",\"dosage\":\"200\",\"frequency\":\"1-0-1\",\"duration\":\"7\",\"time\":\"After food\"},{\"medicine\":\"asddjsk\",\"dosage\":\"500\",\"frequency\":\"1-1-0\",\"duration\":\"5\",\"time\":\"Before food\"}]}', '', '', '', 'lisdjsksfadf', 'active', '2026-04-04 17:24:01', '2026-04-05 08:08:45'),
+(4, 85, 119, 188, 'Bone crack', '{\"items\":[{\"medicine\":\"Cetafill\",\"dosage\":\"500mg\",\"frequency\":\"1-0-1\",\"duration\":\"5\",\"time\":\"After food\"},{\"medicine\":\"Darkoflex\",\"dosage\":\"200mg\",\"frequency\":\"0-1-0\",\"duration\":\"5\",\"time\":\"Before Food\"}]}', '', '', '', 'Eating Food and water', 'active', '2026-04-05 13:40:48', '2026-04-05 13:40:48'),
+(5, 87, 119, 188, 'jerhwj', '{\"items\":[{\"medicine\":\"aklsdfm\",\"dosage\":\"400mg\",\"frequency\":\"1-0-1\",\"duration\":\"7\",\"time\":\"After food\"}]}', '', '', '', 'kjfhudf', 'active', '2026-04-05 14:03:08', '2026-04-05 14:03:08'),
+(6, 90, 119, 188, 'rkrgkm', '{\"items\":[{\"medicine\":\"mdwkdmk\",\"dosage\":\"400\",\"frequency\":\"1-0-1\",\"duration\":\"5\",\"time\":\"After food\"}]}', '', '', '', 'hewfhdg', 'active', '2026-04-05 16:35:59', '2026-04-05 16:35:59');
 
 -- --------------------------------------------------------
 
@@ -219,7 +316,16 @@ INSERT INTO `doctor_available_day` (`id`, `doctor_id`, `day`, `created_at`, `upd
 (121, 119, 4, '2026-04-01 18:55:55', '2026-04-01 18:55:55'),
 (122, 119, 5, '2026-04-02 12:22:57', '2026-04-02 12:22:57'),
 (123, 119, 1, '2026-04-02 12:55:20', '2026-04-02 12:55:20'),
-(124, 119, 6, '2026-04-02 12:55:20', '2026-04-02 12:55:20');
+(124, 119, 6, '2026-04-02 12:55:20', '2026-04-02 12:55:20'),
+(125, 120, 1, '2026-04-03 17:08:58', '2026-04-03 17:08:58'),
+(126, 120, 2, '2026-04-03 17:08:58', '2026-04-03 17:08:58'),
+(127, 120, 3, '2026-04-03 17:08:58', '2026-04-03 17:08:58'),
+(128, 120, 4, '2026-04-03 17:08:58', '2026-04-03 17:08:58'),
+(129, 120, 5, '2026-04-03 17:08:58', '2026-04-03 17:08:58'),
+(130, 120, 6, '2026-04-03 17:08:58', '2026-04-03 17:08:58'),
+(131, 121, 4, '2026-04-03 18:39:37', '2026-04-03 18:39:37'),
+(132, 121, 5, '2026-04-03 18:39:37', '2026-04-03 18:39:37'),
+(133, 121, 6, '2026-04-03 18:39:37', '2026-04-03 18:39:37');
 
 -- --------------------------------------------------------
 
@@ -353,7 +459,126 @@ INSERT INTO `doctor_available_time` (`id`, `day_id`, `start_time`, `end_time`, `
 (300, 123, '14:00:00', '14:30:00', '2026-04-02 12:55:20', '2026-04-02 12:55:20'),
 (301, 119, '14:00:00', '14:30:00', '2026-04-02 12:55:20', '2026-04-02 12:55:20'),
 (302, 122, '14:00:00', '14:30:00', '2026-04-02 12:55:20', '2026-04-02 12:55:20'),
-(303, 124, '14:00:00', '14:30:00', '2026-04-02 12:55:20', '2026-04-02 12:55:20');
+(303, 124, '14:00:00', '14:30:00', '2026-04-02 12:55:20', '2026-04-02 12:55:20'),
+(304, 125, '10:30:00', '11:00:00', '2026-04-03 17:08:58', '2026-04-03 17:08:58'),
+(305, 126, '10:30:00', '11:00:00', '2026-04-03 17:08:58', '2026-04-03 17:08:58'),
+(306, 127, '10:30:00', '11:00:00', '2026-04-03 17:08:58', '2026-04-03 17:08:58'),
+(307, 128, '10:30:00', '11:00:00', '2026-04-03 17:08:58', '2026-04-03 17:08:58'),
+(308, 129, '10:30:00', '11:00:00', '2026-04-03 17:08:58', '2026-04-03 17:08:58'),
+(309, 130, '10:30:00', '11:00:00', '2026-04-03 17:08:58', '2026-04-03 17:08:58'),
+(310, 131, '14:10:00', '15:10:00', '2026-04-03 18:39:37', '2026-04-03 18:39:37'),
+(311, 132, '14:10:00', '15:10:00', '2026-04-03 18:39:37', '2026-04-03 18:39:37'),
+(312, 133, '14:10:00', '15:10:00', '2026-04-03 18:39:37', '2026-04-03 18:39:37'),
+(313, 125, '15:00:00', '15:30:00', '2026-04-05 09:20:23', '2026-04-05 09:20:23'),
+(314, 126, '15:00:00', '15:30:00', '2026-04-05 09:20:23', '2026-04-05 09:20:23'),
+(315, 127, '15:00:00', '15:30:00', '2026-04-05 09:20:23', '2026-04-05 09:20:23'),
+(316, 123, '16:00:00', '16:30:00', '2026-04-05 10:09:09', '2026-04-05 10:09:09'),
+(317, 119, '16:00:00', '16:30:00', '2026-04-05 10:09:09', '2026-04-05 10:09:09'),
+(318, 120, '16:00:00', '16:30:00', '2026-04-05 10:09:09', '2026-04-05 10:09:09'),
+(319, 121, '16:00:00', '16:30:00', '2026-04-05 10:09:09', '2026-04-05 10:09:09'),
+(320, 125, '16:40:00', '17:00:00', '2026-04-05 10:43:53', '2026-04-05 10:43:53'),
+(321, 126, '16:40:00', '17:00:00', '2026-04-05 10:43:53', '2026-04-05 10:43:53'),
+(322, 127, '16:40:00', '17:00:00', '2026-04-05 10:43:53', '2026-04-05 10:43:53'),
+(323, 125, '16:23:00', '16:45:00', '2026-04-05 10:47:40', '2026-04-05 10:47:40'),
+(324, 126, '16:23:00', '16:45:00', '2026-04-05 10:47:40', '2026-04-05 10:47:40'),
+(325, 127, '16:23:00', '16:45:00', '2026-04-05 10:47:40', '2026-04-05 10:47:40'),
+(326, 123, '16:40:00', '17:00:00', '2026-04-05 11:05:34', '2026-04-05 11:05:34'),
+(327, 119, '16:40:00', '17:00:00', '2026-04-05 11:05:34', '2026-04-05 11:05:34'),
+(328, 123, '18:20:00', '18:40:00', '2026-04-05 12:44:00', '2026-04-05 12:44:00'),
+(329, 119, '18:20:00', '18:40:00', '2026-04-05 12:44:00', '2026-04-05 12:44:00');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `doctor_commissions`
+--
+
+CREATE TABLE `doctor_commissions` (
+  `id` int(11) NOT NULL,
+  `booking_id` int(11) NOT NULL,
+  `bill_id` int(11) NOT NULL,
+  `doctor_id` int(11) NOT NULL,
+  `patient_id` int(11) NOT NULL,
+  `amount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `commission_percent` decimal(5,2) NOT NULL DEFAULT 0.00,
+  `commission_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `status` enum('due','paid') NOT NULL DEFAULT 'due',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `paid_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `doctor_commissions`
+--
+
+INSERT INTO `doctor_commissions` (`id`, `booking_id`, `bill_id`, `doctor_id`, `patient_id`, `amount`, `commission_percent`, `commission_amount`, `status`, `created_at`, `updated_at`, `paid_at`) VALUES
+(1, 81, 5, 121, 187, 14000.00, 5.00, 700.00, 'due', '2026-04-03 18:41:54', '2026-04-05 17:07:49', NULL),
+(2, 82, 6, 120, 187, 200.00, 5.00, 10.00, 'due', '2026-04-04 07:13:16', '2026-04-05 17:07:49', NULL),
+(3, 83, 7, 120, 187, 1.00, 5.00, 0.05, 'due', '2026-04-04 16:22:13', '2026-04-05 17:07:49', NULL),
+(5, 84, 8, 120, 187, 1500.00, 5.00, 75.00, 'due', '2026-04-04 17:24:18', '2026-04-05 17:07:49', NULL),
+(6, 85, 9, 119, 188, 20000.00, 10.00, 2000.00, 'paid', '2026-04-05 13:41:25', '2026-04-05 16:15:31', '2026-04-05 16:15:31'),
+(7, 87, 10, 119, 188, 1500.00, 10.00, 150.00, 'paid', '2026-04-05 14:03:29', '2026-04-05 16:20:10', '2026-04-05 16:20:10'),
+(9, 90, 11, 119, 188, 600.00, 10.00, 60.00, 'due', '2026-04-05 16:36:22', '2026-04-05 16:36:22', NULL),
+(10, 76, 1, 119, 187, 10000.00, 5.00, 500.00, 'due', '2026-04-05 17:41:30', '2026-04-05 17:41:30', NULL),
+(11, 77, 2, 119, 187, 8000.00, 5.00, 400.00, 'due', '2026-04-05 17:41:30', '2026-04-05 17:41:30', NULL),
+(12, 79, 3, 119, 187, 15000.00, 5.00, 750.00, 'due', '2026-04-05 17:41:30', '2026-04-05 17:41:30', NULL),
+(13, 80, 4, 120, 187, 500.00, 5.00, 25.00, 'due', '2026-04-05 17:41:30', '2026-04-05 17:41:30', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `doctor_commission_payments`
+--
+
+CREATE TABLE `doctor_commission_payments` (
+  `id` int(11) NOT NULL,
+  `doctor_id` int(11) NOT NULL,
+  `gateway` varchar(30) NOT NULL DEFAULT 'razorpay',
+  `amount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `currency` char(3) NOT NULL DEFAULT 'INR',
+  `razorpay_order_id` varchar(100) NOT NULL,
+  `razorpay_payment_id` varchar(100) DEFAULT NULL,
+  `razorpay_signature` varchar(255) DEFAULT NULL,
+  `razorpay_method` varchar(50) DEFAULT NULL,
+  `status` enum('created','paid','failed') NOT NULL DEFAULT 'created',
+  `snapshot_count` int(11) NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `paid_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `doctor_commission_payments`
+--
+
+INSERT INTO `doctor_commission_payments` (`id`, `doctor_id`, `gateway`, `amount`, `currency`, `razorpay_order_id`, `razorpay_payment_id`, `razorpay_signature`, `razorpay_method`, `status`, `snapshot_count`, `created_at`, `updated_at`, `paid_at`) VALUES
+(1, 119, 'razorpay', 2000.00, 'INR', 'order_SZsE9oC0SMmpmb', 'pay_SZsEQdFgYlz0F3', '9cb52b69f803dd35e477fc70e499f11a290801b22a1b508b22a8ce1500dc1ee6', 'upi', 'paid', 1, '2026-04-05 16:14:59', '2026-04-05 16:15:31', '2026-04-05 16:15:31'),
+(2, 119, 'razorpay', 150.00, 'INR', 'order_SZsJBrP68Dnr5a', 'pay_SZsJLftWXmOguX', 'd9d95e94d1793f4959683e3e64fd49cb1271b5d78aaf7a0c37d3fd65fb99ed82', 'upi', 'paid', 1, '2026-04-05 16:19:45', '2026-04-05 16:20:10', '2026-04-05 16:20:10'),
+(3, 119, 'razorpay', 60.00, 'INR', 'order_SZsbNVG8oyDR9h', NULL, NULL, NULL, 'created', 1, '2026-04-05 16:36:58', '2026-04-05 16:36:58', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `doctor_commission_payment_items`
+--
+
+CREATE TABLE `doctor_commission_payment_items` (
+  `id` int(11) NOT NULL,
+  `payment_id` int(11) NOT NULL,
+  `commission_id` int(11) NOT NULL,
+  `commission_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `doctor_commission_payment_items`
+--
+
+INSERT INTO `doctor_commission_payment_items` (`id`, `payment_id`, `commission_id`, `commission_amount`, `created_at`) VALUES
+(1, 1, 6, 2000.00, '2026-04-05 16:14:59'),
+(2, 2, 7, 150.00, '2026-04-05 16:19:45'),
+(3, 3, 9, 60.00, '2026-04-05 16:36:58');
 
 -- --------------------------------------------------------
 
@@ -481,7 +706,9 @@ INSERT INTO `doctor_speciality` (`id`, `doctor_id`, `speciality_id`, `created_at
 (121, 118, 7, '2026-03-24 17:20:39', '2026-03-24 17:20:39'),
 (122, 119, 5, '2026-04-01 18:54:20', '2026-04-01 18:54:20'),
 (123, 120, 8, '2026-04-02 16:17:33', '2026-04-02 16:17:33'),
-(124, 120, 7, '2026-04-02 16:17:33', '2026-04-02 16:17:33');
+(124, 120, 7, '2026-04-02 16:17:33', '2026-04-02 16:17:33'),
+(125, 121, 1, '2026-04-03 18:36:23', '2026-04-03 18:36:23'),
+(126, 122, 4, '2026-04-05 15:41:10', '2026-04-05 15:41:10');
 
 -- --------------------------------------------------------
 
@@ -693,7 +920,8 @@ INSERT INTO `patient` (`id`, `firstname`, `lastname`, `phone_number`, `email`, `
 (184, 'Mock', 'Patient', 1234567890, NULL, NULL, '1990-01-01', 'Male', 'Rajkot', '2026-04-01 14:26:01', '2026-04-01 14:26:01'),
 (185, 'Mock', 'Two', 987654321, 'mockpatient2@test.com', '$2y$10$IdaY1Py.j.kM1wPNs34qBe/HX/aLuuMACvM./v8OoY4yk6K5KsdHa', '1989-01-01', 'Male', 'Rajkot', '2026-04-01 14:44:20', '2026-04-01 14:44:20'),
 (186, 'Random', 'User', 9988776655, 'randomuser9988@gmail.com', '$2y$10$OfZNeR0/ImAhBJzU9uvygea883Mdti.uITfqsAW0FM3X2K5s6Mimy', '1990-01-01', 'Male', '789 Random Road', '2026-04-01 16:19:27', '2026-04-01 16:19:27'),
-(187, 'Aastha', 'Shah', 9313252046, 'admin@gmail.com', '$2y$10$SGo6GjJv7yDNBGEvLPXcPO9cYvMRYkKdVk98WJbMvswjIE7mkIpAK', '2017-06-05', 'Female', 'Samrajya Appt,Kalawad Road,Rajkot', '2026-04-01 18:42:33', '2026-04-01 18:42:33');
+(187, 'Aastha', 'Shah', 9313252046, 'admin@gmail.com', '$2y$10$SGo6GjJv7yDNBGEvLPXcPO9cYvMRYkKdVk98WJbMvswjIE7mkIpAK', '2017-06-05', 'Female', 'Samrajya Appt,Kalawad Road,Rajkot', '2026-04-01 18:42:33', '2026-04-01 18:42:33'),
+(188, 'Aastha', 'Shah', 9898989898, 'shahaastha2024@gmail.com', '$2y$10$lj1/3ZY6KRxwklyKGQK0lexVJ3aSdQIy/1S2SwHZk61zriDYOFug6', '2005-09-20', 'Female', 'Kalawad Road, Rajkot', '2026-04-05 07:42:44', '2026-04-05 07:42:44');
 
 -- --------------------------------------------------------
 
@@ -791,112 +1019,121 @@ CREATE TABLE `users` (
   `category_id` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `profile_image` varchar(255) DEFAULT NULL
+  `profile_image` varchar(255) DEFAULT NULL,
+  `license_number` varchar(50) DEFAULT NULL,
+  `license_document` varchar(255) DEFAULT NULL,
+  `verification_status` enum('verified','pending','rejected') NOT NULL DEFAULT 'verified',
+  `verification_reason` varchar(255) DEFAULT NULL,
+  `verified_at` timestamp NULL DEFAULT NULL,
+  `verified_by_admin_id` int(11) DEFAULT NULL,
+  `commission_percent` decimal(5,2) NOT NULL DEFAULT 10.00
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `firstname`, `lastname`, `phone_number`, `date_of_birth`, `email`, `gender`, `address`, `clinic_name`, `experience_years`, `education`, `bio`, `password`, `role_id`, `category_id`, `created_at`, `updated_at`, `profile_image`) VALUES
-(1, 'John', 'Doe', 1234567890, '1985-06-15', 'johndoe@test.com', 'Male', 'Rajkot', 'City Health Clinic, Rajkot', 15, 'MBBS, MD (Cardiology)', 'Dr. John Doe is a leading expert in Cardiology with over 15 years of experience.', '$2y$10$bOmlvOevKT8bIwEiuJjZW.Jrc44cxlyOUIWrzIUPIQWxVTMZpvGIy', 2, 1, '2025-10-02 05:38:03', '2026-04-01 14:26:46', NULL),
-(2, 'Jane', 'Smith', 9876543210, '1990-11-20', '', 'Female', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 2, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(4, 'Krisha', 'Patel', 9234567890, '1982-03-20', '', 'Female', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 1, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(5, 'Rohan', 'Mehta', 9345678901, '1978-07-10', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 2, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(6, 'Meera', 'Joshi', 9456789012, '1985-05-05', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 2, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(7, 'Arjun', 'Sharma', 9567890123, '1975-02-28', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 3, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(8, 'Nisha', 'Desai', 9678901234, '1988-08-18', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 3, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(9, 'Kunal', 'Kapoor', 9789012345, '1983-12-10', '', 'Male', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 4, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(10, 'Sneha', 'Trivedi', 9890123456, '1986-09-25', '', 'Female', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 4, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(11, 'Vivek', 'Malhotra', 9901234567, '1979-04-14', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 5, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(12, 'Anaya', 'Gupta', 9012345678, '1990-11-30', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 5, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(13, 'Raj', 'Malani', 9123456789, '1981-06-21', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 6, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(14, 'Pooja', 'Nair', 9234567891, '1984-02-17', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 6, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(15, 'Dhruv', 'Shah', 9345678902, '1980-03-10', '', 'Male', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 7, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(16, 'Sanya', 'Patel', 9456789013, '1987-05-22', '', 'Female', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 7, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(17, 'Karan', 'Mehta', 9567890124, '1982-12-05', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 8, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(18, 'Isha', 'Joshi', 9678901235, '1985-08-13', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 8, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(19, 'Amit', 'Sharma', 9789012346, '1977-07-19', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 9, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(20, 'Riya', 'Desai', 9890123457, '1989-10-07', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 9, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(21, 'Siddharth', 'Kapoor', 9901234568, '1981-01-29', '', 'Male', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 10, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(22, 'Diya', 'Trivedi', 9012345679, '1983-06-15', '', 'Female', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 10, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(23, 'Ankit', 'Malhotra', 9123456790, '1980-09-12', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(24, 'Tara', 'Gupta', 9234567892, '1986-11-03', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(25, 'Raghav', 'Malani', 9345678903, '1979-04-25', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, NULL, '2025-10-02 05:38:03', '2025-10-03 10:45:37', NULL),
-(26, 'Mira', 'Nair', 9456789014, '1987-07-09', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 12, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(27, 'Dev', 'Shah', 9567890125, '1982-02-16', '', 'Male', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 1, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(28, 'Kavya', 'Patel', 9678901236, '1988-05-29', '', 'Female', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 2, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(29, 'Arnav', 'Mehta', 9789012347, '1983-08-07', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 3, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(30, 'Anika', 'Joshi', 9890123458, '1985-12-21', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 4, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(31, 'Ritvik', 'Sharma', 9901234569, '1980-01-14', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 5, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(32, 'Sana', 'Desai', 9012345680, '1986-03-28', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 6, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(33, 'Vihaan', 'Kapoor', 9123456791, '1982-09-09', '', 'Male', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 7, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(34, 'Ira', 'Trivedi', 9234567893, '1989-11-17', '', 'Female', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 8, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(35, 'Yash', 'Malhotra', 9345678904, '1978-06-02', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 9, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(36, 'Anvi', 'Gupta', 9456789015, '1987-08-19', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 10, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(37, 'Kabir', 'Malani', 9567890126, '1981-04-22', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(38, 'Sara', 'Nair', 9678901237, '1984-07-30', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 12, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(39, 'Aryan', 'Shah', 9789012348, '1980-10-25', '', 'Male', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 1, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(40, 'Kiara', 'Patel', 9890123459, '1985-02-12', '', 'Female', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 2, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(41, 'Reyansh', 'Mehta', 9901234570, '1979-05-07', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 3, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(42, 'Anaya', 'Joshi', 9012345681, '1988-09-15', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 4, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(43, 'Arjun', 'Sharma', 9123456792, '1983-03-03', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 5, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(44, 'Mahi', 'Desai', 9234567894, '1986-06-21', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 6, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(45, 'Rudra', 'Kapoor', 9345678905, '1981-11-11', '', 'Male', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 7, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(46, 'Naina', 'Trivedi', 9456789016, '1987-01-08', '', 'Female', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 12, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(47, 'Shaurya', 'Malhotra', 9567890127, '1978-09-18', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(48, 'Sahana', 'Gupta', 9678901238, '1985-12-22', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(49, 'Aarav', 'Shah', 9789012349, '1982-02-14', '', 'Male', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 1, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(50, 'Tara', 'Patel', 9890123460, '1986-04-22', '', 'Female', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 1, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(51, 'Ritvik', 'Mehta', 9901234571, '1980-09-12', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 2, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(52, 'Kiara', 'Joshi', 9012345682, '1985-12-01', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 2, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(53, 'Aditya', 'Sharma', 9123456793, '1979-03-18', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 3, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(54, 'Naina', 'Desai', 9234567895, '1983-08-09', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 3, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(55, 'Yuvraj', 'Kapoor', 9345678906, '1981-06-25', '', 'Male', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 4, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(56, 'Anika', 'Trivedi', 9456789017, '1987-11-13', '', 'Female', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 4, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(57, 'Dev', 'Malhotra', 9567890128, '1980-01-30', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 5, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(58, 'Mira', 'Gupta', 9678901239, '1984-05-07', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 5, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(59, 'Kabir', 'Malani', 9789012350, '1982-09-20', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 6, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(60, 'Sanya', 'Nair', 9890123461, '1986-02-28', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 6, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(61, 'Rohan', 'Shah', 9901234572, '1978-07-15', '', 'Male', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 7, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(62, 'Diya', 'Patel', 9012345683, '1985-10-12', '', 'Female', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 7, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(63, 'Arjun', 'Mehta', 9123456794, '1983-01-23', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 8, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(64, 'Isha', 'Joshi', 9234567896, '1987-06-18', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 8, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(65, 'Siddharth', 'Sharma', 9345678907, '1980-03-09', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 9, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(66, 'Anaya', 'Desai', 9456789018, '1984-08-30', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 9, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(67, 'Dhruv', 'Kapoor', 9567890129, '1979-11-07', '', 'Male', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 10, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(68, 'Sara', 'Trivedi', 9678901240, '1986-01-19', '', 'Female', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 10, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(69, 'Amit', 'Malhotra', 9789012351, '1981-04-05', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(70, 'Tina', 'Gupta', 9890123462, '1985-09-22', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(71, 'Raghav', 'Malani', 9901234573, '1978-12-14', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 12, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(72, 'Kiara', 'Nair', 9012345684, '1983-07-17', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 12, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(73, 'Aryan', 'Shah', 9123456795, '1980-05-09', '', 'Male', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 1, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(74, 'Anvi', 'Patel', 9234567897, '1986-11-26', '', 'Female', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 1, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(75, 'Reyansh', 'Mehta', 9345678908, '1982-01-05', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 2, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(76, 'Mahi', 'Joshi', 9456789019, '1987-03-18', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 2, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(77, 'Rudra', 'Sharma', 9567890130, '1979-06-21', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 3, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(78, 'Nisha', 'Desai', 9678901241, '1984-09-10', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 3, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(79, 'Shaurya', 'Kapoor', 9789012352, '1981-12-19', '', 'Male', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 4, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(80, 'Sahana', 'Trivedi', 9890123463, '1985-02-28', '', 'Female', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 4, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(81, 'Arnav', 'Malhotra', 9901234574, '1980-08-15', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 5, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(82, 'Ira', 'Gupta', 9012345685, '1983-11-07', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 5, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(83, 'Kabir', 'Malani', 9123456796, '1979-04-25', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 6, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(84, 'Tara', 'Nair', 9234567898, '1986-09-12', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 6, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(85, 'Vivaan', 'Shah', 9345678909, '1982-03-03', '', 'Male', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 7, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(86, 'Anaya', 'Patel', 9456789020, '1985-06-15', '', 'Female', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 7, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(87, 'Dhruv', 'Mehta', 9567890131, '1980-10-20', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 8, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(88, 'Mira', 'Joshi', 9678901242, '1983-02-09', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 8, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(89, 'Aditya', 'Sharma', 9789012353, '1978-05-18', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 9, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(90, 'Sanya', 'Desai', 9890123464, '1987-07-21', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 9, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(91, 'Ritvik', 'Kapoor', 9901234575, '1981-12-30', '', 'Male', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 10, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(92, 'Kiara', 'Trivedi', 9012345686, '1984-03-16', '', 'Female', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 10, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(93, 'Arjun', 'Malhotra', 9123456797, '1980-08-09', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(94, 'Naina', 'Gupta', 9234567899, '1986-11-02', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(95, 'Aryan', 'Malani', 9345678910, '1979-01-12', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 12, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(96, 'Diya', 'Nair', 9456789021, '1985-04-18', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 12, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL),
-(118, 'Aastha', 'Shah', 9313252046, '1989-09-20', 'shahaastha2024@gmail.com', 'Female', 'Kalawad Road, Rajkot', NULL, 0, NULL, NULL, '$2y$10$rgx7gsLbP.w1.sCmYtlixeSo4NnqXyTBMljMVozq9s0/HbqM0PzVq', 2, 4, '2026-03-24 17:17:52', '2026-04-02 16:14:08', NULL),
-(119, 'Aastha', 'Shah', 9898706474, '1994-01-18', 'admin@test.com', 'Female', 'Samrajya Appt,Kalawad Road,Rajkot', 'Giriraj Hospital', 5, 'MBBS, MD', 'klwmefksfmsk', '$2y$10$DbDMtO.tNVlTv36qFlRHauRJo72ZuV6ujuDo7bMGhIe/DELhWwYeK', 2, 3, '2026-04-01 18:52:16', '2026-04-02 18:51:39', 'uploads/doctors/doctor_119_20260402_205139_e4f890c02f7f.jpg'),
-(120, 'Krisha ', 'Maru', 9898706474, '1987-06-02', 'Krishamaru24@gmail.com', 'Female', 'Samrajya Appt,Kalawad Road,Rajkot', 'Wockhardt', 10, 'MBBS', 'skdfjsidfjifjidg', '$2y$10$niDTPp0kejorC9R3Nda5Cuh1T.XbO6WYR872O8atIKG7y6wFAlPLO', 2, 4, '2026-04-02 16:15:53', '2026-04-02 16:17:33', NULL);
+INSERT INTO `users` (`id`, `firstname`, `lastname`, `phone_number`, `date_of_birth`, `email`, `gender`, `address`, `clinic_name`, `experience_years`, `education`, `bio`, `password`, `role_id`, `category_id`, `created_at`, `updated_at`, `profile_image`, `license_number`, `license_document`, `verification_status`, `verification_reason`, `verified_at`, `verified_by_admin_id`, `commission_percent`) VALUES
+(1, 'John', 'Doe', 1234567890, '1985-06-15', 'johndoe@test.com', 'Male', 'Rajkot', 'City Health Clinic, Rajkot', 15, 'MBBS, MD (Cardiology)', 'Dr. John Doe is a leading expert in Cardiology with over 15 years of experience.', '$2y$10$bOmlvOevKT8bIwEiuJjZW.Jrc44cxlyOUIWrzIUPIQWxVTMZpvGIy', 2, 1, '2025-10-02 05:38:03', '2026-04-01 14:26:46', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(2, 'Jane', 'Smith', 9876543210, '1990-11-20', '', 'Female', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 2, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(4, 'Krisha', 'Patel', 9234567890, '1982-03-20', '', 'Female', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 1, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(5, 'Rohan', 'Mehta', 9345678901, '1978-07-10', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 2, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(6, 'Meera', 'Joshi', 9456789012, '1985-05-05', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 2, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(7, 'Arjun', 'Sharma', 9567890123, '1975-02-28', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 3, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(8, 'Nisha', 'Desai', 9678901234, '1988-08-18', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 3, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(9, 'Kunal', 'Kapoor', 9789012345, '1983-12-10', '', 'Male', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 4, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(10, 'Sneha', 'Trivedi', 9890123456, '1986-09-25', '', 'Female', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 4, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(11, 'Vivek', 'Malhotra', 9901234567, '1979-04-14', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 5, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(12, 'Anaya', 'Gupta', 9012345678, '1990-11-30', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 5, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(13, 'Raj', 'Malani', 9123456789, '1981-06-21', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 6, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(14, 'Pooja', 'Nair', 9234567891, '1984-02-17', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 6, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(15, 'Dhruv', 'Shah', 9345678902, '1980-03-10', '', 'Male', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 7, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(16, 'Sanya', 'Patel', 9456789013, '1987-05-22', '', 'Female', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 7, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(17, 'Karan', 'Mehta', 9567890124, '1982-12-05', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 8, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(18, 'Isha', 'Joshi', 9678901235, '1985-08-13', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 8, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(19, 'Amit', 'Sharma', 9789012346, '1977-07-19', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 9, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(20, 'Riya', 'Desai', 9890123457, '1989-10-07', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 9, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(21, 'Siddharth', 'Kapoor', 9901234568, '1981-01-29', '', 'Male', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 10, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(22, 'Diya', 'Trivedi', 9012345679, '1983-06-15', '', 'Female', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 10, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(23, 'Ankit', 'Malhotra', 9123456790, '1980-09-12', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(24, 'Tara', 'Gupta', 9234567892, '1986-11-03', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(25, 'Raghav', 'Malani', 9345678903, '1979-04-25', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, NULL, '2025-10-02 05:38:03', '2025-10-03 10:45:37', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(26, 'Mira', 'Nair', 9456789014, '1987-07-09', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 12, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(27, 'Dev', 'Shah', 9567890125, '1982-02-16', '', 'Male', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 1, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(28, 'Kavya', 'Patel', 9678901236, '1988-05-29', '', 'Female', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 2, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(29, 'Arnav', 'Mehta', 9789012347, '1983-08-07', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 3, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(30, 'Anika', 'Joshi', 9890123458, '1985-12-21', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 4, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(31, 'Ritvik', 'Sharma', 9901234569, '1980-01-14', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 5, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(32, 'Sana', 'Desai', 9012345680, '1986-03-28', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 6, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(33, 'Vihaan', 'Kapoor', 9123456791, '1982-09-09', '', 'Male', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 7, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(34, 'Ira', 'Trivedi', 9234567893, '1989-11-17', '', 'Female', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 8, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(35, 'Yash', 'Malhotra', 9345678904, '1978-06-02', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 9, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(36, 'Anvi', 'Gupta', 9456789015, '1987-08-19', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 10, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(37, 'Kabir', 'Malani', 9567890126, '1981-04-22', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(38, 'Sara', 'Nair', 9678901237, '1984-07-30', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 12, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(39, 'Aryan', 'Shah', 9789012348, '1980-10-25', '', 'Male', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 1, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(40, 'Kiara', 'Patel', 9890123459, '1985-02-12', '', 'Female', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 2, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(41, 'Reyansh', 'Mehta', 9901234570, '1979-05-07', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 3, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(42, 'Anaya', 'Joshi', 9012345681, '1988-09-15', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 4, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(43, 'Arjun', 'Sharma', 9123456792, '1983-03-03', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 5, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(44, 'Mahi', 'Desai', 9234567894, '1986-06-21', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 6, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(45, 'Rudra', 'Kapoor', 9345678905, '1981-11-11', '', 'Male', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 7, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(46, 'Naina', 'Trivedi', 9456789016, '1987-01-08', '', 'Female', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 12, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(47, 'Shaurya', 'Malhotra', 9567890127, '1978-09-18', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(48, 'Sahana', 'Gupta', 9678901238, '1985-12-22', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(49, 'Aarav', 'Shah', 9789012349, '1982-02-14', '', 'Male', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 1, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(50, 'Tara', 'Patel', 9890123460, '1986-04-22', '', 'Female', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 1, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(51, 'Ritvik', 'Mehta', 9901234571, '1980-09-12', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 2, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(52, 'Kiara', 'Joshi', 9012345682, '1985-12-01', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 2, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(53, 'Aditya', 'Sharma', 9123456793, '1979-03-18', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 3, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(54, 'Naina', 'Desai', 9234567895, '1983-08-09', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 3, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(55, 'Yuvraj', 'Kapoor', 9345678906, '1981-06-25', '', 'Male', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 4, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(56, 'Anika', 'Trivedi', 9456789017, '1987-11-13', '', 'Female', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 4, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(57, 'Dev', 'Malhotra', 9567890128, '1980-01-30', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 5, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(58, 'Mira', 'Gupta', 9678901239, '1984-05-07', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 5, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(59, 'Kabir', 'Malani', 9789012350, '1982-09-20', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 6, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(60, 'Sanya', 'Nair', 9890123461, '1986-02-28', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 6, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(61, 'Rohan', 'Shah', 9901234572, '1978-07-15', '', 'Male', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 7, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(62, 'Diya', 'Patel', 9012345683, '1985-10-12', '', 'Female', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 7, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(63, 'Arjun', 'Mehta', 9123456794, '1983-01-23', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 8, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(64, 'Isha', 'Joshi', 9234567896, '1987-06-18', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 8, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(65, 'Siddharth', 'Sharma', 9345678907, '1980-03-09', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 9, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(66, 'Anaya', 'Desai', 9456789018, '1984-08-30', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 9, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(67, 'Dhruv', 'Kapoor', 9567890129, '1979-11-07', '', 'Male', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 10, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(68, 'Sara', 'Trivedi', 9678901240, '1986-01-19', '', 'Female', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 10, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(69, 'Amit', 'Malhotra', 9789012351, '1981-04-05', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(70, 'Tina', 'Gupta', 9890123462, '1985-09-22', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(71, 'Raghav', 'Malani', 9901234573, '1978-12-14', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 12, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(72, 'Kiara', 'Nair', 9012345684, '1983-07-17', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 12, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(73, 'Aryan', 'Shah', 9123456795, '1980-05-09', '', 'Male', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 1, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(74, 'Anvi', 'Patel', 9234567897, '1986-11-26', '', 'Female', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 1, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(75, 'Reyansh', 'Mehta', 9345678908, '1982-01-05', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 2, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(76, 'Mahi', 'Joshi', 9456789019, '1987-03-18', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 2, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(77, 'Rudra', 'Sharma', 9567890130, '1979-06-21', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 3, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(78, 'Nisha', 'Desai', 9678901241, '1984-09-10', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 3, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(79, 'Shaurya', 'Kapoor', 9789012352, '1981-12-19', '', 'Male', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 4, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(80, 'Sahana', 'Trivedi', 9890123463, '1985-02-28', '', 'Female', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 4, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(81, 'Arnav', 'Malhotra', 9901234574, '1980-08-15', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 5, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(82, 'Ira', 'Gupta', 9012345685, '1983-11-07', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 5, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(83, 'Kabir', 'Malani', 9123456796, '1979-04-25', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 6, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(84, 'Tara', 'Nair', 9234567898, '1986-09-12', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 6, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(85, 'Vivaan', 'Shah', 9345678909, '1982-03-03', '', 'Male', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 7, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(86, 'Anaya', 'Patel', 9456789020, '1985-06-15', '', 'Female', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 7, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(87, 'Dhruv', 'Mehta', 9567890131, '1980-10-20', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 8, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(88, 'Mira', 'Joshi', 9678901242, '1983-02-09', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 8, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(89, 'Aditya', 'Sharma', 9789012353, '1978-05-18', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 9, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(90, 'Sanya', 'Desai', 9890123464, '1987-07-21', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 9, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(91, 'Ritvik', 'Kapoor', 9901234575, '1981-12-30', '', 'Male', 'Rajkot', NULL, 0, NULL, NULL, '', 2, 10, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(92, 'Kiara', 'Trivedi', 9012345686, '1984-03-16', '', 'Female', 'Ahmedabad', NULL, 0, NULL, NULL, '', 2, 10, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(93, 'Arjun', 'Malhotra', 9123456797, '1980-08-09', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(94, 'Naina', 'Gupta', 9234567899, '1986-11-02', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(95, 'Aryan', 'Malani', 9345678910, '1979-01-12', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 12, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(96, 'Diya', 'Nair', 9456789021, '1985-04-18', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 12, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(118, 'Aastha', 'Shah', 9313252046, '1989-09-20', 'shahaastha2024@gmail.com', 'Female', 'Kalawad Road, Rajkot', NULL, 0, NULL, NULL, '$2y$10$rgx7gsLbP.w1.sCmYtlixeSo4NnqXyTBMljMVozq9s0/HbqM0PzVq', 2, 4, '2026-03-24 17:17:52', '2026-04-02 16:14:08', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(119, 'Aastha', 'Shah', 9898706474, '1994-01-18', 'admin@test.com', 'Female', 'Samrajya Appt,Kalawad Road,Rajkot', 'Giriraj Hospital', 5, 'MBBS, MD', 'klwmefksfmsk', '$2y$10$DbDMtO.tNVlTv36qFlRHauRJo72ZuV6ujuDo7bMGhIe/DELhWwYeK', 2, 3, '2026-04-01 18:52:16', '2026-04-02 18:51:39', 'uploads/doctors/doctor_119_20260402_205139_e4f890c02f7f.jpg', NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(120, 'Krisha ', 'Maru', 9898706474, '1987-06-02', 'Krishamaru24@gmail.com', 'Female', 'Samrajya Appt,Kalawad Road,Rajkot', 'Wockhardt', 10, 'MBBS', 'skdfjsidfjifjidg', '$2y$10$niDTPp0kejorC9R3Nda5Cuh1T.XbO6WYR872O8atIKG7y6wFAlPLO', 2, 4, '2026-04-02 16:15:53', '2026-04-04 17:10:48', 'uploads/doctors/doctor_120_20260404_191048_a6e31be692fc.jpg', NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
+(121, 'Aastha', 'Shah', 9601927950, '1970-06-09', 'ashah464@rku.ac.in', 'Female', 'Samrajya Appt,Kalawad Road,Rajkot', 'Wockhardt', 4, 'MBBS, MD', 'wdsfsfg', '$2y$10$O/WnfeKI.jsoEYAbE.XZXe/lG9tvdHZzNTlBbgpnfGa681ihx/ZUi', 2, 1, '2026-04-03 18:34:59', '2026-04-03 18:36:50', NULL, 'MD067370Y', 'uploads/licenses/license_doctor_121_20260403_203459_3e2eacab0958.jpg', 'verified', NULL, '2026-04-03 18:36:50', 1, 10.00),
+(122, 'Riya', 'Shah', 9898706474, '1972-06-06', 'Riya24@gmail.com', 'Female', '9 square,Nana Muva  road, Rajkot', 'Sterling', 8, 'MBBS, MD', 'erkjtiewkrmledf', '$2y$10$5hHCUgIKJyNux3uMAb8CzOFtE1DSM2GdS74Lt7p9sMXQQXyS517mS', 2, 2, '2026-04-05 15:36:39', '2026-04-05 15:49:17', NULL, 'MD067376Z', 'uploads/licenses/license_doctor_122_20260405_210640_785bad6c0851.png', 'verified', NULL, '2026-04-05 15:39:56', 1, 2.00);
 
 -- --------------------------------------------------------
 
@@ -917,83 +1154,104 @@ CREATE TABLE `visit_booking` (
   `appointment_date` date DEFAULT NULL,
   `status` enum('pending','accepted','visited','rejected') DEFAULT 'pending',
   `patient_notified` tinyint(1) DEFAULT 0,
-  `doctor_seen` tinyint(1) NOT NULL DEFAULT 0
+  `doctor_seen` tinyint(1) NOT NULL DEFAULT 0,
+  `reminder_sent_at` datetime DEFAULT NULL,
+  `documents_emailed_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `visit_booking`
 --
 
-INSERT INTO `visit_booking` (`id`, `patient_id`, `doctor_id`, `speciality_id`, `time_id`, `Note`, `is_visited`, `created_at`, `updated_at`, `appointment_date`, `status`, `patient_notified`, `doctor_seen`) VALUES
-(1, 1, 1, 1, 1, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(2, 2, 2, 3, 2, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(3, 3, 3, 5, 3, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(4, 4, 4, 2, 4, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(5, 5, 5, 4, 5, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(6, 6, 6, 6, 6, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(7, 7, 7, 5, 7, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(8, 8, 8, 6, 8, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(9, 9, 9, 7, 9, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(10, 10, 10, 8, 10, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(11, 11, 11, 9, 11, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(12, 12, 12, 10, 12, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(13, 13, 13, 12, 13, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(14, 14, 14, 13, 14, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(15, 15, 15, 15, 15, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(16, 16, 16, 16, 16, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(17, 17, 17, 18, 17, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(18, 18, 18, 18, 18, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(19, 19, 19, 21, 19, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(20, 20, 20, 21, 20, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(21, 21, 21, 24, 21, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(22, 22, 22, 27, 22, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(23, 23, 23, 30, 23, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(24, 24, 24, 30, 24, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(25, 25, 25, 1, 25, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(26, 26, 26, 3, 26, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(27, 27, 27, 5, 27, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(28, 28, 28, 7, 28, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(29, 29, 29, 9, 29, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(30, 30, 30, 12, 30, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(31, 31, 31, 15, 31, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(32, 32, 32, 18, 32, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(33, 33, 33, 21, 33, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(34, 34, 34, 24, 34, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(35, 35, 35, 27, 35, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(36, 36, 36, 30, 36, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(37, 37, 37, 2, 37, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(38, 38, 38, 4, 38, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(39, 39, 39, 6, 39, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(40, 40, 40, 8, 40, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(41, 41, 41, 9, 41, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(42, 42, 42, 12, 42, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(43, 43, 43, 15, 43, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(44, 44, 44, 18, 44, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(45, 45, 45, 21, 45, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(46, 46, 46, 24, 46, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(47, 47, 47, 27, 47, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(48, 48, 48, 30, 48, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(49, 49, 49, 1, 49, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(50, 50, 50, 3, 50, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(52, 183, 1, 2, 2, '', 1, '2025-10-03 13:47:11', '2026-04-02 19:21:59', NULL, 'pending', 0, 1),
-(66, 183, 109, 17, 292, '', 1, '2025-10-07 10:06:59', '2026-04-02 19:21:59', '2025-10-08', 'visited', 0, 1),
-(67, 183, 109, 17, 294, '', 1, '2025-10-07 10:15:02', '2026-04-02 19:21:59', '2025-10-10', 'rejected', 0, 1),
-(68, 183, 109, 17, 291, '', 1, '2025-10-07 10:28:45', '2026-04-02 19:21:59', '2025-10-14', 'visited', 0, 1),
-(69, 183, 109, 17, 292, '', 1, '2025-10-07 12:45:22', '2026-04-02 19:21:59', '2025-10-22', 'visited', 0, 1),
-(70, 183, 109, 17, 290, '', 1, '2025-10-07 12:51:04', '2026-04-02 19:21:59', '2025-10-20', 'rejected', 0, 1),
-(71, 183, 109, 17, 293, '', 1, '2025-10-07 13:00:31', '2026-04-02 19:21:59', '2025-10-16', 'visited', 0, 1),
-(72, 183, 109, 17, 293, '', 1, '2025-10-07 13:56:43', '2026-04-02 19:21:59', '2025-10-23', 'visited', 0, 1),
-(73, 183, 109, 17, 292, '', 1, '2025-10-07 16:11:19', '2026-04-02 19:21:59', '2025-10-29', 'visited', 0, 1),
-(74, 185, 1, 2, 4, 'Checkup', 0, '2026-04-01 14:45:49', '2026-04-02 19:21:59', '2026-04-08', 'accepted', 0, 1),
-(75, 187, 119, 5, 297, '', 1, '2026-04-01 18:57:22', '2026-04-02 19:21:59', '2026-04-01', 'visited', 1, 1),
-(76, 187, 119, 5, 302, 'Check Up', 1, '2026-04-02 15:46:09', '2026-04-02 19:21:59', '2026-04-03', 'visited', 1, 1),
-(77, 187, 119, 5, 303, 'break in bone', 1, '2026-04-02 16:31:52', '2026-04-02 19:21:59', '2026-04-04', 'visited', 1, 1),
-(78, 187, 119, 5, 299, '', 0, '2026-04-02 19:01:00', '2026-04-02 19:21:59', '2026-04-03', 'rejected', 1, 1),
-(79, 187, 119, 5, 299, '', 1, '2026-04-02 19:22:37', '2026-04-02 19:40:46', '2026-04-03', 'visited', 1, 1);
+INSERT INTO `visit_booking` (`id`, `patient_id`, `doctor_id`, `speciality_id`, `time_id`, `Note`, `is_visited`, `created_at`, `updated_at`, `appointment_date`, `status`, `patient_notified`, `doctor_seen`, `reminder_sent_at`, `documents_emailed_at`) VALUES
+(1, 1, 1, 1, 1, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(2, 2, 2, 3, 2, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(3, 3, 3, 5, 3, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(4, 4, 4, 2, 4, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(5, 5, 5, 4, 5, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(6, 6, 6, 6, 6, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(7, 7, 7, 5, 7, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(8, 8, 8, 6, 8, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(9, 9, 9, 7, 9, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(10, 10, 10, 8, 10, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(11, 11, 11, 9, 11, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(12, 12, 12, 10, 12, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(13, 13, 13, 12, 13, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(14, 14, 14, 13, 14, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(15, 15, 15, 15, 15, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(16, 16, 16, 16, 16, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(17, 17, 17, 18, 17, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(18, 18, 18, 18, 18, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(19, 19, 19, 21, 19, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(20, 20, 20, 21, 20, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(21, 21, 21, 24, 21, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(22, 22, 22, 27, 22, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(23, 23, 23, 30, 23, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(24, 24, 24, 30, 24, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(25, 25, 25, 1, 25, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(26, 26, 26, 3, 26, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(27, 27, 27, 5, 27, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(28, 28, 28, 7, 28, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(29, 29, 29, 9, 29, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(30, 30, 30, 12, 30, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(31, 31, 31, 15, 31, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(32, 32, 32, 18, 32, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(33, 33, 33, 21, 33, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(34, 34, 34, 24, 34, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(35, 35, 35, 27, 35, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(36, 36, 36, 30, 36, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(37, 37, 37, 2, 37, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(38, 38, 38, 4, 38, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(39, 39, 39, 6, 39, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(40, 40, 40, 8, 40, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(41, 41, 41, 9, 41, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(42, 42, 42, 12, 42, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(43, 43, 43, 15, 43, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(44, 44, 44, 18, 44, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(45, 45, 45, 21, 45, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(46, 46, 46, 24, 46, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(47, 47, 47, 27, 47, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(48, 48, 48, 30, 48, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(49, 49, 49, 1, 49, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(50, 50, 50, 3, 50, '', 0, '2025-10-02 05:38:03', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(52, 183, 1, 2, 2, '', 1, '2025-10-03 13:47:11', '2026-04-02 19:21:59', NULL, 'pending', 0, 1, NULL, NULL),
+(66, 183, 109, 17, 292, '', 1, '2025-10-07 10:06:59', '2026-04-02 19:21:59', '2025-10-08', 'visited', 0, 1, NULL, NULL),
+(67, 183, 109, 17, 294, '', 1, '2025-10-07 10:15:02', '2026-04-02 19:21:59', '2025-10-10', 'rejected', 0, 1, NULL, NULL),
+(68, 183, 109, 17, 291, '', 1, '2025-10-07 10:28:45', '2026-04-02 19:21:59', '2025-10-14', 'visited', 0, 1, NULL, NULL),
+(69, 183, 109, 17, 292, '', 1, '2025-10-07 12:45:22', '2026-04-02 19:21:59', '2025-10-22', 'visited', 0, 1, NULL, NULL),
+(70, 183, 109, 17, 290, '', 1, '2025-10-07 12:51:04', '2026-04-02 19:21:59', '2025-10-20', 'rejected', 0, 1, NULL, NULL),
+(71, 183, 109, 17, 293, '', 1, '2025-10-07 13:00:31', '2026-04-02 19:21:59', '2025-10-16', 'visited', 0, 1, NULL, NULL),
+(72, 183, 109, 17, 293, '', 1, '2025-10-07 13:56:43', '2026-04-02 19:21:59', '2025-10-23', 'visited', 0, 1, NULL, NULL),
+(73, 183, 109, 17, 292, '', 1, '2025-10-07 16:11:19', '2026-04-02 19:21:59', '2025-10-29', 'visited', 0, 1, NULL, NULL),
+(74, 185, 1, 2, 4, 'Checkup', 0, '2026-04-01 14:45:49', '2026-04-02 19:21:59', '2026-04-08', 'accepted', 0, 1, NULL, NULL),
+(75, 187, 119, 5, 297, '', 1, '2026-04-01 18:57:22', '2026-04-02 19:21:59', '2026-04-01', 'visited', 1, 1, NULL, NULL),
+(76, 187, 119, 5, 302, 'Check Up', 1, '2026-04-02 15:46:09', '2026-04-02 19:21:59', '2026-04-03', 'visited', 1, 1, NULL, NULL),
+(77, 187, 119, 5, 303, 'break in bone', 1, '2026-04-02 16:31:52', '2026-04-02 19:21:59', '2026-04-04', 'visited', 1, 1, NULL, NULL),
+(78, 187, 119, 5, 299, '', 0, '2026-04-02 19:01:00', '2026-04-02 19:21:59', '2026-04-03', 'rejected', 1, 1, NULL, NULL),
+(79, 187, 119, 5, 299, '', 1, '2026-04-02 19:22:37', '2026-04-02 19:40:46', '2026-04-03', 'visited', 1, 1, NULL, NULL),
+(80, 187, 120, 7, 309, 'Hairfall', 1, '2026-04-03 17:09:56', '2026-04-03 17:46:51', '2026-04-04', 'visited', 1, 0, NULL, NULL),
+(81, 187, 121, 1, 312, '', 1, '2026-04-03 18:40:59', '2026-04-04 15:39:17', '2026-04-04', 'visited', 1, 0, NULL, NULL),
+(82, 187, 120, 8, 304, '', 1, '2026-04-04 07:09:44', '2026-04-04 15:39:17', '2026-04-06', 'visited', 1, 0, NULL, NULL),
+(83, 187, 120, 8, 305, 'Danruff', 1, '2026-04-04 16:16:58', '2026-04-04 17:25:05', '2026-04-07', 'visited', 1, 0, NULL, NULL),
+(84, 187, 120, 7, 306, 'Dark Spots', 1, '2026-04-04 17:21:58', '2026-04-04 17:25:05', '2026-04-08', 'visited', 1, 0, NULL, NULL),
+(85, 188, 119, 5, 300, 'Regular check up', 1, '2026-04-05 07:43:35', '2026-04-05 13:41:34', '2026-04-06', 'visited', 0, 0, '2026-04-05 14:10:58', '2026-04-05 19:11:34'),
+(86, 188, 120, 8, 313, 'Hairfall', 0, '2026-04-05 09:21:47', '2026-04-05 09:36:20', '2026-04-06', 'accepted', 1, 0, '2026-04-05 15:06:20', NULL),
+(87, 188, 119, 5, 316, '', 1, '2026-04-05 10:13:28', '2026-04-05 14:03:38', '2026-04-06', 'visited', 0, 0, '2026-04-05 16:10:25', '2026-04-05 19:33:38'),
+(88, 188, 120, 7, 320, 'Red marks', 0, '2026-04-05 10:44:42', '2026-04-05 10:57:01', '2026-04-06', 'accepted', 1, 0, '2026-04-05 16:27:01', NULL),
+(89, 188, 120, 8, 323, '', 0, '2026-04-05 10:48:22', '2026-04-05 10:56:55', '2026-04-06', 'accepted', 1, 0, '2026-04-05 16:26:55', NULL),
+(90, 188, 119, 5, 326, '', 1, '2026-04-05 11:07:18', '2026-04-05 16:36:32', '2026-04-06', 'visited', 0, 0, '2026-04-05 16:49:15', '2026-04-05 22:06:32'),
+(91, 188, 119, 5, 328, '', 0, '2026-04-05 12:44:51', '2026-04-05 12:50:33', '2026-04-06', 'accepted', 1, 0, '2026-04-05 18:20:33', NULL);
 
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `admin_users`
+--
+ALTER TABLE `admin_users`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_admin_email` (`email`);
 
 --
 -- Indexes for table `category`
@@ -1005,6 +1263,25 @@ ALTER TABLE `category`
 -- Indexes for table `clinic_bills`
 --
 ALTER TABLE `clinic_bills`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_booking` (`booking_id`),
+  ADD KEY `idx_doctor` (`doctor_id`),
+  ADD KEY `idx_patient` (`patient_id`);
+
+--
+-- Indexes for table `clinic_bill_payments`
+--
+ALTER TABLE `clinic_bill_payments`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_order` (`razorpay_order_id`),
+  ADD KEY `idx_bill` (`bill_id`),
+  ADD KEY `idx_patient` (`patient_id`),
+  ADD KEY `idx_status` (`status`);
+
+--
+-- Indexes for table `clinic_prescriptions`
+--
+ALTER TABLE `clinic_prescriptions`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uniq_booking` (`booking_id`),
   ADD KEY `idx_doctor` (`doctor_id`),
@@ -1023,6 +1300,34 @@ ALTER TABLE `doctor_available_day`
 ALTER TABLE `doctor_available_time`
   ADD PRIMARY KEY (`id`),
   ADD KEY `day_id` (`day_id`);
+
+--
+-- Indexes for table `doctor_commissions`
+--
+ALTER TABLE `doctor_commissions`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_booking` (`booking_id`),
+  ADD KEY `idx_doctor` (`doctor_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_bill` (`bill_id`);
+
+--
+-- Indexes for table `doctor_commission_payments`
+--
+ALTER TABLE `doctor_commission_payments`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_order` (`razorpay_order_id`),
+  ADD KEY `idx_doctor` (`doctor_id`),
+  ADD KEY `idx_status` (`status`);
+
+--
+-- Indexes for table `doctor_commission_payment_items`
+--
+ALTER TABLE `doctor_commission_payment_items`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_payment_commission` (`payment_id`,`commission_id`),
+  ADD KEY `idx_payment` (`payment_id`),
+  ADD KEY `idx_commission` (`commission_id`);
 
 --
 -- Indexes for table `doctor_speciality`
@@ -1075,6 +1380,12 @@ ALTER TABLE `visit_booking`
 --
 
 --
+-- AUTO_INCREMENT for table `admin_users`
+--
+ALTER TABLE `admin_users`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `category`
 --
 ALTER TABLE `category`
@@ -1084,31 +1395,61 @@ ALTER TABLE `category`
 -- AUTO_INCREMENT for table `clinic_bills`
 --
 ALTER TABLE `clinic_bills`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- AUTO_INCREMENT for table `clinic_bill_payments`
+--
+ALTER TABLE `clinic_bill_payments`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `clinic_prescriptions`
+--
+ALTER TABLE `clinic_prescriptions`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `doctor_available_day`
 --
 ALTER TABLE `doctor_available_day`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=125;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=134;
 
 --
 -- AUTO_INCREMENT for table `doctor_available_time`
 --
 ALTER TABLE `doctor_available_time`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=304;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=330;
+
+--
+-- AUTO_INCREMENT for table `doctor_commissions`
+--
+ALTER TABLE `doctor_commissions`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+
+--
+-- AUTO_INCREMENT for table `doctor_commission_payments`
+--
+ALTER TABLE `doctor_commission_payments`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `doctor_commission_payment_items`
+--
+ALTER TABLE `doctor_commission_payment_items`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `doctor_speciality`
 --
 ALTER TABLE `doctor_speciality`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=125;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=127;
 
 --
 -- AUTO_INCREMENT for table `patient`
 --
 ALTER TABLE `patient`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=188;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=189;
 
 --
 -- AUTO_INCREMENT for table `roles`
@@ -1126,13 +1467,13 @@ ALTER TABLE `speciality`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=121;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=123;
 
 --
 -- AUTO_INCREMENT for table `visit_booking`
 --
 ALTER TABLE `visit_booking`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=80;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=92;
 
 --
 -- Constraints for dumped tables

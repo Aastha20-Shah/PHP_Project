@@ -221,7 +221,7 @@ $time_slots = array_values($time_slots);
             right: 0;
             height: 60px;
             background: #ffffff;
-            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.05);
+            box-shadow: -3 2px 10px rgba(0, 0, 0, 0.05);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -263,7 +263,7 @@ $time_slots = array_values($time_slots);
         .header-right {
             display: flex;
             align-items: center;
-            gap: 18px;
+            gap: 25px;
         }
 
         .header-icon {
@@ -284,11 +284,27 @@ $time_slots = array_values($time_slots);
             background: #e9ecef;
         }
 
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff6b6b;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .user-profile {
             display: flex;
             align-items: center;
             gap: 12px;
-            cursor: default;
+            cursor: pointer;
         }
 
         .user-avatar {
@@ -304,9 +320,15 @@ $time_slots = array_values($time_slots);
             font-size: 14px;
         }
 
+        .flag-icon {
+            width: 24px;
+            height: 18px;
+            border-radius: 3px;
+        }
+
         /* SIDEBAR */
         .sidebar {
-            width: 265px;
+            width: 280px;
             position: fixed;
             left: 0;
             top: 60px;
@@ -314,7 +336,14 @@ $time_slots = array_values($time_slots);
             background: #ffffff;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
             overflow-y: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
             z-index: 1000;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 0;
+            height: 0;
         }
 
         .doctor-profile-sidebar {
@@ -414,7 +443,6 @@ $time_slots = array_values($time_slots);
             min-height: calc(100vh - 70px);
             position: relative;
             overflow: hidden;
-            font-size: 13px;
         }
 
         .main-content::before {
@@ -440,49 +468,49 @@ $time_slots = array_values($time_slots);
         }
 
         .breadcrumb-bar {
-            background: #f7f9fd;
-            padding: 18px 22px;
+            background: #ffffff;
             border-radius: 16px;
-            margin-bottom: 30px;
-            border: 1px solid #e6edf7;
-            box-shadow: 0 8px 24px rgba(31, 42, 68, 0.06);
+            padding: 18px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            margin-bottom: 22px;
             position: relative;
             z-index: 1;
         }
 
         .breadcrumb-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: #1f2a44;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .breadcrumb-links {
+            font-size: 15px;
+            font-weight: 700;
+            color: #333;
             display: flex;
             align-items: center;
             gap: 8px;
+        }
+
+        .breadcrumb-links {
             font-size: 13px;
-            color: #666;
-            margin-top: 5px;
+            color: #999;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .panel-card {
             background: #ffffff;
             border-radius: 18px;
-            padding: 25px;
-            box-shadow: 0 12px 28px rgba(31, 42, 68, 0.08);
-            border: 1px solid #e6edf7;
+            padding: 22px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
             position: relative;
             z-index: 1;
         }
 
         .card-title {
-            font-size: 15px;
+            font-size: 18px;
             font-weight: 700;
-            color: #1f2a44;
-            margin-bottom: 16px;
+            color: #333;
+            margin-bottom: 14px;
         }
 
         .availability-table {
@@ -532,6 +560,29 @@ $time_slots = array_values($time_slots);
         .days-grid .form-check {
             margin: 0;
             font-size: 13px;
+        }
+
+        /* Checkbox visibility (slightly darker border) */
+        .availability-table .form-check-input,
+        .days-grid .form-check-input {
+            border-color: #c0c7d1;
+        }
+
+        .availability-table .form-check-input:hover,
+        .days-grid .form-check-input:hover {
+            border-color: #aeb6c2;
+        }
+
+        .availability-table .form-check-input:focus,
+        .days-grid .form-check-input:focus {
+            border-color: #5a8dee;
+            box-shadow: 0 0 0 0.15rem rgba(90, 141, 238, 0.25);
+        }
+
+        .availability-table .form-check-input:checked,
+        .days-grid .form-check-input:checked {
+            background-color: #5a8dee;
+            border-color: #5a8dee;
         }
     </style>
 
@@ -587,7 +638,7 @@ $time_slots = array_values($time_slots);
         <div class="header-left">
             <div class="logo">
                 <i class="fa-solid fa-stethoscope"></i>
-                <span>Medikit</span>
+                <span>Medkit</span>
             </div>
             <button class="menu-toggle" type="button">
                 <i class="fas fa-bars"></i>
@@ -638,7 +689,7 @@ $time_slots = array_values($time_slots);
                 </div>
             </div>
             <img src="https://flagcdn.com/w40/us.png" alt="US" class="flag-icon">
-            <div class="user-profile">
+            <a href="doctor_profile.php" class="user-profile text-decoration-none" title="View Profile" aria-label="View Profile">
                 <span class="user-name"><?= htmlspecialchars(trim($doctor['firstname'] . ' ' . $doctor['lastname'])) ?></span>
                 <?php
                 $doctor_avatar_src = (!empty($doctor['profile_image']) && file_exists(__DIR__ . '/' . $doctor['profile_image']))
@@ -646,7 +697,7 @@ $time_slots = array_values($time_slots);
                     : "https://ui-avatars.com/api/?name=" . urlencode(trim($doctor['firstname'] . ' ' . $doctor['lastname'])) . "&background=5a8dee&color=fff";
                 ?>
                 <img src="<?= htmlspecialchars($doctor_avatar_src) ?>" alt="Profile" class="user-avatar">
-            </div>
+            </a>
         </div>
     </div>
 
@@ -698,7 +749,7 @@ $time_slots = array_values($time_slots);
                 <i class="fas fa-users"></i>
                 <span>Patients</span>
             </a>
-            <a href="#" class="nav-item">
+            <a href="doctor_analytics.php" class="nav-item">
                 <i class="fas fa-chart-line"></i>
                 <span>Analytics</span>
             </a>
@@ -706,13 +757,13 @@ $time_slots = array_values($time_slots);
                 <i class="fas fa-file-invoice-dollar"></i>
                 <span>Billing</span>
             </a>
-            <a href="#" class="nav-item">
-                <i class="fas fa-file-medical"></i>
-                <span>Medical Certificates</span>
+            <a href="doctor_prescriptions.php" class="nav-item">
+                <i class="fas fa-file-prescription"></i>
+                <span>Prescriptions</span>
             </a>
-            <a href="#" class="nav-item">
-                <i class="fas fa-notes-medical"></i>
-                <span>Consultations Note</span>
+            <a href="logout.php" class="nav-item">
+                <i class="fas fa-right-from-bracket"></i>
+                <span>Logout</span>
             </a>
         </nav>
     </div>

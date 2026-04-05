@@ -2,6 +2,7 @@
 session_start();
 include("config.php");
 include("billing_helpers.php");
+include("admin_helpers.php");
 include("profile_image_helpers.php");
 include("doctor_notification_helpers.php");
 
@@ -63,6 +64,30 @@ if (empty($schema_error)) {
       }
     }
     $stmt->close();
+  }
+}
+
+$commission_due_total = 0.0;
+$commission_due_count = 0;
+if (empty($schema_error)) {
+  medikit_commission_ensure_schema($conn);
+
+  $cstmt = $conn->prepare(
+    "SELECT COUNT(*) AS cnt, COALESCE(SUM(dc.commission_amount), 0) AS total
+       FROM doctor_commissions dc
+       INNER JOIN clinic_bills cb ON cb.id = dc.bill_id
+      WHERE dc.doctor_id = ?
+        AND dc.status = 'due'
+        AND cb.payment_status = 'paid'"
+  );
+  if ($cstmt) {
+    $cstmt->bind_param('i', $doctor_id);
+    $cstmt->execute();
+    $crow = $cstmt->get_result()->fetch_assoc();
+    $cstmt->close();
+
+    $commission_due_total = (float)($crow['total'] ?? 0);
+    $commission_due_count = (int)($crow['cnt'] ?? 0);
   }
 }
 ?>
@@ -207,7 +232,7 @@ if (empty($schema_error)) {
 
     /* SIDEBAR */
     .sidebar {
-      width: 265px;
+      width: 280px;
       position: fixed;
       left: 0;
       top: 60px;
@@ -215,7 +240,14 @@ if (empty($schema_error)) {
       background: #ffffff;
       box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
       overflow-y: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
       z-index: 1000;
+    }
+
+    .sidebar::-webkit-scrollbar {
+      width: 0;
+      height: 0;
     }
 
     .doctor-profile-sidebar {
@@ -429,7 +461,7 @@ if (empty($schema_error)) {
     <div class="header-left">
       <div class="logo">
         <i class="fa-solid fa-stethoscope"></i>
-        <span>Medikit</span>
+        <span>Medkit</span>
       </div>
     </div>
     <div class="header-right">
@@ -477,7 +509,7 @@ if (empty($schema_error)) {
         </div>
       </div>
       <img src="https://flagcdn.com/w40/us.png" alt="US" class="flag-icon">
-      <div class="user-profile">
+      <a href="doctor_profile.php" class="user-profile text-decoration-none" title="View Profile" aria-label="View Profile">
         <span class="user-name"><?= htmlspecialchars($doctor['firstname'] . ' ' . $doctor['lastname']) ?></span>
         <?php
         $doctor_avatar_src = (!empty($doctor['profile_image']) && file_exists(__DIR__ . '/' . $doctor['profile_image']))
@@ -485,7 +517,7 @@ if (empty($schema_error)) {
           : "https://ui-avatars.com/api/?name=" . urlencode($doctor['firstname'] . '+' . $doctor['lastname']) . "&background=5a8dee&color=fff";
         ?>
         <img src="<?= htmlspecialchars($doctor_avatar_src) ?>" alt="Profile" class="user-avatar">
-      </div>
+      </a>
     </div>
   </div>
 
@@ -539,7 +571,7 @@ if (empty($schema_error)) {
         <i class="fas fa-users"></i>
         <span>Patients</span>
       </a>
-      <a href="#" class="nav-item">
+      <a href="doctor_analytics.php" class="nav-item">
         <i class="fas fa-chart-line"></i>
         <span>Analytics</span>
       </a>
@@ -547,13 +579,13 @@ if (empty($schema_error)) {
         <i class="fas fa-file-invoice-dollar"></i>
         <span>Billing</span>
       </a>
-      <a href="#" class="nav-item">
-        <i class="fas fa-file-medical"></i>
-        <span>Medical Certificates</span>
+      <a href="doctor_prescriptions.php" class="nav-item">
+        <i class="fas fa-file-prescription"></i>
+        <span>Prescriptions</span>
       </a>
-      <a href="#" class="nav-item">
-        <i class="fas fa-notes-medical"></i>
-        <span>Consultations Note</span>
+      <a href="logout.php" class="nav-item">
+        <i class="fas fa-right-from-bracket"></i>
+        <span>Logout</span>
       </a>
     </nav>
   </div>
@@ -630,6 +662,37 @@ if (empty($schema_error)) {
         </div>
       <?php endif; ?>
     </div>
+
+    <div class="panel-card" style="margin-top: 18px;">
+      <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap: 10px;">
+        <div>
+          <div class="fw-bold" style="font-size: 18px; color: #333;">Commission Due</div>
+          <div class="text-muted" style="font-size: 13px;">Pay Medkit commission online for paid bills</div>
+        </div>
+        <?php if (empty($schema_error) && $commission_due_count > 0): ?>
+          <button type="button" id="payCommissionBtn" class="btn btn-primary btn-sm">
+            <i class="fas fa-credit-card me-1"></i> Pay Commission Online
+          </button>
+        <?php endif; ?>
+      </div>
+
+      <div class="row g-3 mt-2">
+        <div class="col-md-6">
+          <div class="text-muted" style="font-size: 13px;">Due Amount</div>
+          <div class="fw-bold" style="font-size: 24px; color: #333;">₹ <?= number_format((float)$commission_due_total, 2) ?></div>
+        </div>
+        <div class="col-md-6">
+          <div class="text-muted" style="font-size: 13px;">Due Items</div>
+          <div class="fw-bold" style="font-size: 24px; color: #333;"><?= (int)$commission_due_count ?></div>
+        </div>
+      </div>
+
+      <?php if (!empty($schema_error)): ?>
+        <div class="text-muted mt-2" style="font-size: 13px;">Commission is unavailable because billing is unavailable.</div>
+      <?php elseif ($commission_due_count <= 0): ?>
+        <div class="text-muted mt-2" style="font-size: 13px;">No commission due right now.</div>
+      <?php endif; ?>
+    </div>
   </div>
 
   <script>
@@ -681,6 +744,97 @@ if (empty($schema_error)) {
       });
     })();
   </script>
+
+  <?php if (empty($schema_error) && $commission_due_count > 0): ?>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+      (function() {
+        const btn = document.getElementById('payCommissionBtn');
+        if (!btn) return;
+
+        const originalHtml = btn.innerHTML;
+
+        function setBusy(isBusy) {
+          btn.disabled = isBusy;
+          btn.innerHTML = isBusy ? 'Processing…' : originalHtml;
+        }
+
+        btn.addEventListener('click', async function() {
+          try {
+            setBusy(true);
+
+            const res = await fetch('doctor_commission_create_order.php', {
+              method: 'POST'
+            });
+
+            const data = await res.json();
+            if (!data || !data.success) {
+              alert((data && data.message) ? data.message : 'Failed to start payment.');
+              setBusy(false);
+              return;
+            }
+
+            const options = {
+              key: data.key_id,
+              amount: data.amount,
+              currency: data.currency,
+              name: data.name,
+              description: data.description,
+              order_id: data.order_id,
+              prefill: data.prefill || {},
+              handler: async function(response) {
+                try {
+                  const verifyBody = new URLSearchParams({
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_signature: response.razorpay_signature
+                  });
+
+                  const vres = await fetch('doctor_commission_verify_payment.php', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: verifyBody.toString()
+                  });
+
+                  const vdata = await vres.json();
+                  if (vdata && vdata.success) {
+                    window.location.reload();
+                    return;
+                  }
+
+                  alert((vdata && vdata.message) ? vdata.message : 'Payment verification failed.');
+                  setBusy(false);
+                } catch (e) {
+                  console.error(e);
+                  alert('Payment verification failed.');
+                  setBusy(false);
+                }
+              },
+              modal: {
+                ondismiss: function() {
+                  setBusy(false);
+                }
+              }
+            };
+
+            const rzp = new Razorpay(options);
+            rzp.on('payment.failed', function(resp) {
+              setBusy(false);
+              const msg = (resp && resp.error && resp.error.description) ? resp.error.description : 'Payment failed.';
+              alert(msg);
+            });
+            rzp.open();
+          } catch (e) {
+            console.error(e);
+            alert('Failed to start payment.');
+            setBusy(false);
+          }
+        });
+      })();
+    </script>
+  <?php endif; ?>
 
 </body>
 

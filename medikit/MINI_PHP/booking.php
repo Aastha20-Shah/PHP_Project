@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['boo
                 $stmt->bind_param("ii", $booking_id, $doctor_id);
                 $stmt->execute();
                 if ($stmt->affected_rows > 0) {
-                    $redirect_to = 'doctor_bill.php?booking_id=' . $booking_id;
+                    $redirect_to = 'doctor_prescription.php?booking_id=' . $booking_id;
                 }
                 $stmt->close();
             }
@@ -244,7 +244,7 @@ if ($stmt) {
 
         /* SIDEBAR */
         .sidebar {
-            width: 265px;
+            width: 280px;
             position: fixed;
             left: 0;
             top: 60px;
@@ -252,7 +252,14 @@ if ($stmt) {
             background: #ffffff;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
             overflow-y: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
             z-index: 1000;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 0;
+            height: 0;
         }
 
         .doctor-profile-sidebar {
@@ -508,7 +515,7 @@ if ($stmt) {
         <div class="header-left">
             <div class="logo">
                 <i class="fa-solid fa-stethoscope"></i>
-                <span>Medikit</span>
+                <span>Medkit</span>
             </div>
         </div>
         <div class="header-right">
@@ -556,7 +563,7 @@ if ($stmt) {
                 </div>
             </div>
             <img src="https://flagcdn.com/w40/us.png" alt="US" class="flag-icon">
-            <div class="user-profile">
+            <a href="doctor_profile.php" class="user-profile text-decoration-none" title="View Profile" aria-label="View Profile">
                 <span class="user-name"><?= htmlspecialchars($doctor['firstname'] . ' ' . $doctor['lastname']) ?></span>
                 <?php
                 $doctor_avatar_src = (!empty($doctor['profile_image']) && file_exists(__DIR__ . '/' . $doctor['profile_image']))
@@ -564,7 +571,7 @@ if ($stmt) {
                     : "https://ui-avatars.com/api/?name=" . urlencode($doctor['firstname'] . '+' . $doctor['lastname']) . "&background=5a8dee&color=fff";
                 ?>
                 <img src="<?= htmlspecialchars($doctor_avatar_src) ?>" alt="Profile" class="user-avatar">
-            </div>
+            </a>
         </div>
     </div>
 
@@ -618,7 +625,7 @@ if ($stmt) {
                 <i class="fas fa-users"></i>
                 <span>Patients</span>
             </a>
-            <a href="#" class="nav-item">
+            <a href="doctor_analytics.php" class="nav-item">
                 <i class="fas fa-chart-line"></i>
                 <span>Analytics</span>
             </a>
@@ -626,13 +633,13 @@ if ($stmt) {
                 <i class="fas fa-file-invoice-dollar"></i>
                 <span>Billing</span>
             </a>
-            <a href="#" class="nav-item">
-                <i class="fas fa-file-medical"></i>
-                <span>Medical Certificates</span>
+            <a href="doctor_prescriptions.php" class="nav-item">
+                <i class="fas fa-file-prescription"></i>
+                <span>Prescriptions</span>
             </a>
-            <a href="#" class="nav-item">
-                <i class="fas fa-notes-medical"></i>
-                <span>Consultations Note</span>
+            <a href="logout.php" class="nav-item">
+                <i class="fas fa-right-from-bracket"></i>
+                <span>Logout</span>
             </a>
         </nav>
     </div>
@@ -784,6 +791,7 @@ if ($stmt) {
                                             </form>
                                         <?php else: ?>
                                             <?php if (($raw_status ?? '') === 'visited'): ?>
+                                                <a class="btn btn-outline-dark btn-sm btn-action" href="doctor_prescription.php?booking_id=<?= (int)$booking['booking_id'] ?>">Prescription</a>
                                                 <a class="btn btn-outline-primary btn-sm btn-action" href="doctor_bill.php?booking_id=<?= (int)$booking['booking_id'] ?>">View Bill</a>
                                             <?php else: ?>
                                                 <span class="text-muted">—</span>

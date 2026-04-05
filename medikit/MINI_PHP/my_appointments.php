@@ -2,6 +2,7 @@
 session_start();
 include("config.php");
 include("billing_helpers.php");
+include("prescription_helpers.php");
 
 // Security: If user is not logged in, redirect to login page
 if (!isset($_SESSION['patient_id'])) {
@@ -19,36 +20,12 @@ try {
     $billing_schema_error = $e->getMessage();
 }
 
-$thank_you_msg = '';
-$thank_you_type = 'primary';
-
-// Show a one-time thank-you message when an appointment is marked visited
-$stmt_thanks = $conn->prepare("SELECT COUNT(*) AS cnt FROM visit_booking WHERE patient_id = ? AND status = 'visited' AND patient_notified = 0");
-if ($stmt_thanks) {
-    $stmt_thanks->bind_param("i", $patient_id);
-    $stmt_thanks->execute();
-    $res_thanks = $stmt_thanks->get_result();
-    $row_thanks = $res_thanks ? $res_thanks->fetch_assoc() : null;
-    $cnt_thanks = (int)($row_thanks['cnt'] ?? 0);
-    if ($cnt_thanks > 0) {
-        $thank_you_msg = 'Thank you for visiting! We hope you had a pleasant experience.';
-    }
-    $stmt_thanks->close();
+$rx_schema_error = '';
+try {
+    prescriptions_ensure_schema($conn);
+} catch (Throwable $e) {
+    $rx_schema_error = $e->getMessage();
 }
-
-// --- Notification Logic: Mark all new status updates as read ---
-$update_read_status = "UPDATE visit_booking 
-                       SET patient_notified = 1 
-                       WHERE patient_id = ? 
-                       AND patient_notified = 0";
-
-$stmt_update = $conn->prepare($update_read_status);
-if ($stmt_update) {
-    $stmt_update->bind_param("i", $patient_id);
-    $stmt_update->execute();
-    $stmt_update->close();
-}
-// -----------------------------------------------------------------
 
 $appointments = [];
 
@@ -57,6 +34,8 @@ if ($billing_schema_error === '') {
     $query = "SELECT 
                                 vb.id AS booking_id,
                                 vb.appointment_date,
+                                dat.start_time,
+                                dat.end_time,
                                 vb.status,
                                 u.firstname AS doc_firstname,
                                 u.lastname AS doc_lastname,
@@ -65,6 +44,7 @@ if ($billing_schema_error === '') {
                                 u.phone_number AS clinic_phone,
                                 u.email AS clinic_email,
                                 s.doctor_speciality,
+                                cp.id AS prescription_id,
                                 cb.id AS bill_id,
                                 cb.payment_status AS bill_status
                             FROM 
@@ -73,6 +53,10 @@ if ($billing_schema_error === '') {
                                 users AS u ON vb.doctor_id = u.id
                             JOIN 
                                 speciality AS s ON vb.speciality_id = s.id
+                            LEFT JOIN
+                                doctor_available_time AS dat ON dat.id = vb.time_id
+                            LEFT JOIN
+                                clinic_prescriptions AS cp ON cp.booking_id = vb.id
                             LEFT JOIN
                                 clinic_bills AS cb ON cb.booking_id = vb.id
                             WHERE 
@@ -83,6 +67,8 @@ if ($billing_schema_error === '') {
     $query = "SELECT 
                                 vb.id AS booking_id,
                                 vb.appointment_date,
+                                dat.start_time,
+                                dat.end_time,
                                 vb.status,
                                 u.firstname AS doc_firstname,
                                 u.lastname AS doc_lastname,
@@ -90,13 +76,18 @@ if ($billing_schema_error === '') {
                                 u.address AS clinic_address,
                                 u.phone_number AS clinic_phone,
                                 u.email AS clinic_email,
-                                s.doctor_speciality
+                                s.doctor_speciality,
+                                cp.id AS prescription_id
                             FROM 
                                 visit_booking AS vb
                             JOIN 
                                 users AS u ON vb.doctor_id = u.id
                             JOIN 
                                 speciality AS s ON vb.speciality_id = s.id
+                            LEFT JOIN
+                                doctor_available_time AS dat ON dat.id = vb.time_id
+                            LEFT JOIN
+                                clinic_prescriptions AS cp ON cp.booking_id = vb.id
                             WHERE 
                                 vb.patient_id = ?
                             ORDER BY 
@@ -117,12 +108,6 @@ $stmt->close();
 ?>
 <?php include('header.php'); ?>
 <main class="container my-5">
-    <?php if ($thank_you_msg !== ''): ?>
-        <div class="alert alert-<?php echo htmlspecialchars($thank_you_type); ?> alert-dismissible fade show" role="alert">
-            <?php echo htmlspecialchars($thank_you_msg); ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    <?php endif; ?>
     <?php if ($billing_schema_error !== ''): ?>
         <div class="alert alert-warning">
             Billing is not available right now.
@@ -174,6 +159,22 @@ $stmt->close();
                                 </div>
                                 <div class="col-md-4 text-md-center">
                                     <p class="text-muted mb-0"><i class="fas fa-calendar-alt me-2"></i><?php echo htmlspecialchars(date("F j, Y", strtotime($appt['appointment_date']))); ?></p>
+
+                                    <?php
+                                    $start_time_raw = trim((string)($appt['start_time'] ?? ''));
+                                    $end_time_raw = trim((string)($appt['end_time'] ?? ''));
+                                    $time_label = '';
+                                    if ($start_time_raw !== '') {
+                                        $time_label = date('g:i A', strtotime($start_time_raw));
+                                        if ($end_time_raw !== '') {
+                                            $time_label .= ' - ' . date('g:i A', strtotime($end_time_raw));
+                                        }
+                                    }
+                                    ?>
+
+                                    <?php if ($time_label !== ''): ?>
+                                        <p class="text-muted mb-0 small"><i class="fas fa-clock me-2"></i><?php echo htmlspecialchars($time_label); ?></p>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="col-md-3 text-md-end mt-3 mt-md-0">
                                     <?php
@@ -206,6 +207,13 @@ $stmt->close();
                                     ?>
 
                                     <div class="mt-2">
+                                        <?php $prescription_id = (int)($appt['prescription_id'] ?? 0); ?>
+                                        <?php if ($prescription_id > 0): ?>
+                                            <a href="view_prescription.php?booking_id=<?php echo (int)$appt['booking_id']; ?>" class="btn btn-outline-dark btn-sm mb-2">View Prescription</a>
+                                        <?php elseif (($appt['status'] ?? '') === 'visited' && $rx_schema_error !== ''): ?>
+                                            <div class="text-muted small">Prescription: Not Available</div>
+                                        <?php endif; ?>
+
                                         <?php if ($bill_id > 0): ?>
                                             <div class="mb-2">
                                                 <span class="badge rounded-pill <?php echo $bill_badge; ?>">Bill: <?php echo htmlspecialchars($bill_text); ?></span>

@@ -1,6 +1,10 @@
 <?php
 session_start();
 include("config.php");
+include("admin_helpers.php");
+include_once("mailer_helpers.php");
+
+medikit_doctor_verification_ensure_schema($conn);
 
 $is_logged_in = isset($_SESSION['patient_id']);
 $patient_id   = $is_logged_in ? $_SESSION['patient_id'] : null;
@@ -29,6 +33,13 @@ if (isset($_POST['book'])) {
         $note             = mysqli_real_escape_string($conn, $_POST['note']);
         $appointment_date = mysqli_real_escape_string($conn, $_POST['appointment_date']);
 
+        if (!medikit_doctor_is_verified($conn, $doctor_id_post)) {
+            $_SESSION['message'] = 'This doctor is not verified yet. Please choose another doctor.';
+            $_SESSION['message_type'] = 'warning';
+            header("Location: index.php#find-doctor");
+            exit();
+        }
+
         // Prevent booking past dates/times
         $appointment_date_clean = trim((string)($_POST['appointment_date'] ?? ''));
         $appointment_day_start = strtotime($appointment_date_clean . ' 00:00:00');
@@ -37,7 +48,7 @@ if (isset($_POST['book'])) {
         if ($appointment_day_start === false || $today_start === false || $appointment_day_start < $today_start) {
             $_SESSION['message'] = 'Please choose a current or future date.';
             $_SESSION['message_type'] = 'warning';
-            header("Location: index.php");
+            header("Location: index.php#find-doctor");
             exit();
         }
 
@@ -55,7 +66,7 @@ if (isset($_POST['book'])) {
         if ($slot_start_time === '') {
             $_SESSION['message'] = 'Invalid time slot. Please select again.';
             $_SESSION['message_type'] = 'warning';
-            header("Location: index.php");
+            header("Location: index.php#find-doctor");
             exit();
         }
 
@@ -64,7 +75,7 @@ if (isset($_POST['book'])) {
             if ($slot_start_ts !== false && $slot_start_ts <= time()) {
                 $_SESSION['message'] = 'This time slot is no longer available. Please choose another.';
                 $_SESSION['message_type'] = 'warning';
-                header("Location: index.php");
+                header("Location: index.php#find-doctor");
                 exit();
             }
         }
@@ -89,13 +100,30 @@ if (isset($_POST['book'])) {
             if (mysqli_query($conn, $ins)) {
                 $_SESSION['message']      = "Slot booked successfully.";
                 $_SESSION['message_type'] = "success";
+
+                $mail_ok = medikit_send_patient_booking_confirmation_email(
+                    $conn,
+                    (int)$patient_id,
+                    (int)$doctor_id_post,
+                    (string)$appointment_date_clean,
+                    (int)$time_id,
+                    (int)$speciality_id
+                );
+
+                if (defined('MEDIKIT_MAIL_ENABLED') && MEDIKIT_MAIL_ENABLED === true) {
+                    if ($mail_ok) {
+                        $_SESSION['message'] .= " Confirmation email sent.";
+                    } else {
+                        $_SESSION['message'] .= " (Booked, but confirmation email could not be sent.)";
+                    }
+                }
             } else {
                 $_SESSION['message']      = "Error submitting appointment: " . mysqli_error($conn);
                 $_SESSION['message_type'] = "danger";
             }
         }
     }
-    header("Location: index.php");
+    header("Location: index.php#find-doctor");
     exit();
 }
 
@@ -118,12 +146,8 @@ if ($is_logged_in && empty($msg)) {
                     $msg_type = "success";
                     break;
                 case 'rejected':
-                    $msg      = "❌ Unfortunately, your recent booking request was rejected. Please try another slot.";
-                    $msg_type = "danger";
-                    break;
                 case 'visited':
-                    $msg      = "Thank you for visiting! We hope you had a pleasant experience.";
-                    $msg_type = "primary";
+                    // Cancel/complete updates are shown via the Appointment notifications dropdown.
                     break;
             }
         }
@@ -145,7 +169,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_POST['book'])) {
     $category_id_filter   = isset($_POST['category_id_filter'])   ? intval($_POST['category_id_filter'])   : 0;
     $speciality_id_filter = isset($_POST['speciality_id_filter']) ? intval($_POST['speciality_id_filter']) : 0;
 
-    $where_clauses = [];
+    $where_clauses = [
+        "u.role_id = 2",
+        "u.verification_status = 'verified'",
+    ];
 
     // Free-text search across name, category, speciality
     if ($search_term !== '') {

@@ -2,8 +2,10 @@
 session_start();
 include('config.php');
 include('profile_image_helpers.php');
+include('admin_helpers.php');
 
 medikit_ensure_profile_image_schema($conn);
+medikit_doctor_verification_ensure_schema($conn);
 
 if (!function_exists('medikit_fetch_slots_for_date')) {
     function medikit_fetch_slots_for_date($conn, $doctor_id, $selected_date)
@@ -188,6 +190,11 @@ if (isset($_POST['action']) && $_POST['action'] == 'get_times') {
     $doctor_id = intval($_POST['doctor_id']);
     $selected_date = $_POST['selected_date'];
 
+    if (!medikit_doctor_is_verified($conn, $doctor_id)) {
+        echo '<div class="slot-message text-center text-danger">Doctor is not verified for booking yet.</div>';
+        exit;
+    }
+
     $slots = medikit_fetch_slots_for_date($conn, $doctor_id, $selected_date);
 
     if ($slots['status'] !== 'ok') {
@@ -237,7 +244,10 @@ if (isset($_POST['action']) && $_POST['action'] == 'search_doctors') {
     $experience_filter = isset($_POST['experience_filter']) ? intval($_POST['experience_filter']) : 0;
     $sort_by = isset($_POST['sort_by']) ? mysqli_real_escape_string($conn, trim($_POST['sort_by'])) : 'relevance';
 
-    $where_clauses = [];
+    $where_clauses = [
+        "u.role_id = 2",
+        "u.verification_status = 'verified'",
+    ];
 
     if ($search_term !== '') {
         $where_clauses[] = "(u.firstname LIKE '%$search_term%'
@@ -336,10 +346,10 @@ if (isset($_POST['action']) && $_POST['action'] == 'search_doctors') {
             echo '        <p class="text-muted fw-bold mb-1">' . $specialities . '</p>';
             echo '        <p class="text-muted small mb-1">' . $experience . ' years experience overall</p>';
             echo '        <p class="text-muted small mb-2"><i class="fas fa-map-marker-alt me-1 text-primary"></i>' . $address . '</p>';
-            echo '        <p class="text-muted small mb-0"><i class="fas fa-money-bill-wave me-1 text-success"></i>Pay at Clinic</p>';
             echo '      </div>';
             echo '      <div class="col-md-4 text-md-center mt-3 mt-md-0">';
             echo '        <button class="btn btn-primary btn-sm w-100 mb-2 py-2 fw-bold book-now-btn" data-doctor-id="' . $doctor_id . '" style="border-radius: 6px;"><i class="fas fa-calendar-check me-2"></i>Book Clinic Visit</button>';
+            echo '        <p class="text-muted small mb-2"><i class="fas fa-money-bill-wave me-1 text-success"></i>Pay after bill (Cash / Online)</p>';
             echo '        <button class="btn btn-outline-primary btn-sm w-100 py-2 fw-bold btn-contact-clinic" data-bs-toggle="modal" data-bs-target="#contactClinicModal" data-phone="' . $phone . '" data-docname="' . $name . '" style="border-radius: 6px;"><i class="fas fa-phone-alt me-2"></i>Contact Clinic</button>';
             echo '      </div>';
             echo '    </div>';
@@ -367,7 +377,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'get_booking_form') {
     $doc_stmt = $conn->prepare("
         SELECT firstname, lastname, address, phone_number, experience_years, clinic_name, profile_image
         FROM users
-        WHERE id = ?
+        WHERE id = ? AND role_id = 2 AND verification_status = 'verified'
         LIMIT 1
     ");
     $doc_stmt->bind_param("i", $doctor_id);
@@ -439,8 +449,8 @@ if (isset($_POST['action']) && $_POST['action'] == 'get_booking_form') {
                     <div class="text-muted small"><?php echo intval($doctor['experience_years']); ?> years experience overall</div>
                     <div class="text-muted small"><i class="fas fa-map-marker-alt me-1 text-primary"></i><?php echo htmlspecialchars($doctor['address'] ?: 'Clinic location to be confirmed'); ?></div>
                 </div>
-                <div class="text-end">
-                    <div class="slot-card-fee text-primary fw-bold">Pay at Clinic</div>
+                <div class="d-flex flex-column align-items-start">
+                    <div class="slot-card-fee text-primary fw-bold">Pay after bill (Cash / Online)</div>
                     <button type="button" class="btn btn-outline-primary btn-sm mt-2 btn-contact-clinic" data-bs-toggle="modal" data-bs-target="#contactClinicModal" data-phone="<?php echo htmlspecialchars($doctor['phone_number']); ?>" data-docname="<?php echo htmlspecialchars($doctor['firstname'] . ' ' . $doctor['lastname']); ?>"><i class="fas fa-phone-alt me-1"></i>Contact Clinic</button>
                 </div>
             </div>

@@ -1,6 +1,9 @@
 <?php
 session_start();
 include("config.php");
+include("admin_helpers.php");
+
+medikit_doctor_verification_ensure_schema($conn);
 
 $msg = "";
 $msg_type = "";
@@ -14,14 +17,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = trim(mysqli_real_escape_string($conn, $_POST['email']));
     $gender    = mysqli_real_escape_string($conn, $_POST['gender']);
     $address   = mysqli_real_escape_string($conn, $_POST['address']);
+    $license_number = trim((string)($_POST['license_number'] ?? ''));
     $password  = $_POST['password'];
     $cpassword = $_POST['cpassword'];
 
     $role_id = 2; // Doctor
     $category_id = "NULL";
 
+    // License validation
+    if ($license_number === '') {
+        $msg = "Please enter your medical license number.";
+        $msg_type = "danger";
+    } elseif (strlen($license_number) > 50) {
+        $msg = "License number is too long.";
+        $msg_type = "danger";
+    } elseif (!isset($_FILES['license_document']) || ($_FILES['license_document']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        $msg = "Please upload your medical license document (PDF/JPG/PNG/WEBP).";
+        $msg_type = "danger";
+    }
+
     // Email validation
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $msg = "Please enter a valid email address.";
         $msg_type = "danger";
     }
@@ -53,14 +69,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $msg_type = "danger";
             } else {
                 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                $license_number_sql = mysqli_real_escape_string($conn, $license_number);
                 $query = "INSERT INTO users 
-                (firstname, lastname, phone_number, date_of_birth,email,gender, address, password, role_id, category_id)
+                (firstname, lastname, phone_number, date_of_birth,email,gender, address, password, role_id, category_id, license_number, verification_status)
                 VALUES 
-                ('$firstname','$lastname','$phone','$dob','$email','$gender','$address','$hashed_password','$role_id',$category_id)";
+                ('$firstname','$lastname','$phone','$dob','$email','$gender','$address','$hashed_password','$role_id',$category_id,'$license_number_sql','pending')";
 
                 if (mysqli_query($conn, $query)) {
-                    $msg = "Doctor registered successfully! You can now <a href='login_doctor.php' class='alert-link'>login</a>.";
-                    $msg_type = "success";
+                    $new_doctor_id = (int)mysqli_insert_id($conn);
+                    $upload = medikit_license_upload($conn, $new_doctor_id, $_FILES['license_document']);
+                    if (!($upload['success'] ?? false)) {
+                        mysqli_query($conn, "DELETE FROM users WHERE id = $new_doctor_id");
+                        $msg = "Registration failed: " . htmlspecialchars((string)($upload['message'] ?? 'License upload failed.'));
+                        $msg_type = "danger";
+                    } else {
+                        $msg = "Doctor registered successfully! Your account is now <strong>pending verification</strong> by admin. You will be able to login once your account is verified.";
+                        $msg_type = "success";
+                    }
                 } else {
                     $msg = "Registration failed. Please try again.";
                     $msg_type = "danger";
@@ -135,7 +160,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                 </div>
                             <?php endif; ?>
 
-                            <form method="POST">
+                            <form method="POST" enctype="multipart/form-data">
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold">First Name</label>
@@ -168,6 +193,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Address</label>
                                         <input type="text" name="address" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Medical License Number</label>
+                                        <input type="text" name="license_number" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">License Document</label>
+                                        <input type="file" name="license_document" class="form-control" accept="application/pdf,image/jpeg,image/png,image/webp" required>
+                                        <div class="form-text">Upload PDF/JPG/PNG/WEBP (max 5MB).</div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold">Password</label>

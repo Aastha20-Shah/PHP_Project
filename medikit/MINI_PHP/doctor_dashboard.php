@@ -11,70 +11,440 @@ if (!isset($_SESSION['doctor_id'])) {
     exit;
 }
 
-$doctor_id = $_SESSION['doctor_id'];
 
-$notifications = medikit_doctor_unseen_notifications_list($conn, (int)$doctor_id, 5);
-$notification_count = medikit_doctor_unseen_notifications_count($conn, (int)$doctor_id);
+$doctor_id = (int)$_SESSION['doctor_id'];
 
-/* =======================
-   DASHBOARD COUNTS
-======================= */
+$notifications = medikit_doctor_unseen_notifications_list($conn, $doctor_id, 5);
+$notification_count = medikit_doctor_unseen_notifications_count($conn, $doctor_id);
 
-// Total Patients
-$totalPatients = mysqli_fetch_assoc(mysqli_query(
-    $conn,
-    "SELECT COUNT(DISTINCT patient_id) AS total
-     FROM visit_booking
-     WHERE doctor_id = $doctor_id"
-))['total'] ?? 0;
+function medikit_fetch_row(mysqli $conn, string $sql, string $types = '', ...$params): array
+{
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        return [];
+    }
 
-// Today Appointments
-$todayAppointments = mysqli_fetch_assoc(mysqli_query(
-    $conn,
-    "SELECT COUNT(*) AS total
-     FROM visit_booking
-     WHERE doctor_id = $doctor_id
-     AND appointment_date = CURDATE()"
-))['total'] ?? 0;
+    if ($types !== '') {
+        $stmt->bind_param($types, ...$params);
+    }
 
-// Pending
-$pendingAppointments = mysqli_fetch_assoc(mysqli_query(
-    $conn,
-    "SELECT COUNT(*) AS total
-     FROM visit_booking
-     WHERE doctor_id = $doctor_id
-     AND status = 'pending'"
-))['total'] ?? 0;
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res ? ($res->fetch_assoc() ?: []) : [];
+    $stmt->close();
 
-// Visited
-$visitedAppointments = mysqli_fetch_assoc(mysqli_query(
-    $conn,
-    "SELECT COUNT(*) AS total
-     FROM visit_booking
-     WHERE doctor_id = $doctor_id
-     AND status = 'visited'"
-))['total'] ?? 0;
-
-// Doctor Info
-$doctor = mysqli_fetch_assoc(mysqli_query(
-    $conn,
-    "SELECT u.firstname, u.lastname, u.profile_image, u.email, u.category_id,
-     GROUP_CONCAT(s.doctor_speciality SEPARATOR ', ') AS specialities,
-     COUNT(ds.id) as speciality_count
-     FROM users u
-     LEFT JOIN doctor_speciality ds ON ds.doctor_id = u.id
-     LEFT JOIN speciality s ON s.id = ds.speciality_id
-     WHERE u.id = $doctor_id
-     GROUP BY u.id"
-));
-
-if (is_array($doctor)) {
-    // DB schema does not include a profile_image column; keep the UI checks safe.
-    $doctor['profile_image'] = $doctor['profile_image'] ?? '';
+    return is_array($row) ? $row : [];
 }
 
+function medikit_fetch_scalar(mysqli $conn, string $sql, string $types = '', ...$params)
+{
+    $row = medikit_fetch_row($conn, $sql, $types, ...$params);
+    if (empty($row)) {
+        return 0;
+    }
+
+    $value = array_values($row)[0] ?? 0;
+    return is_numeric($value) ? ($value + 0) : 0;
+}
+
+/* =======================
+   DASHBOARD METRICS
+======================= */
+
+$currency_symbol = '₹';
+
+// Total Patients (distinct) who registered/booked an appointment (ignore rejected)
+$totalPatients = (int)medikit_fetch_scalar(
+    $conn,
+    "SELECT COUNT(DISTINCT patient_id) AS total
+       FROM visit_booking
+      WHERE doctor_id = ?
+        AND patient_id <> 0
+        AND status IN ('pending','accepted','visited')",
+    'i',
+    $doctor_id
+);
+
+// Patients with booked appointments not yet completed (distinct)
+$incompletePatients = (int)medikit_fetch_scalar(
+    $conn,
+    "SELECT COUNT(DISTINCT patient_id) AS total
+       FROM visit_booking
+      WHERE doctor_id = ?
+        AND patient_id <> 0
+        AND status IN ('pending','accepted')",
+    'i',
+    $doctor_id
+);
+
+// Total Appointments
+$totalAppointments = (int)medikit_fetch_scalar(
+    $conn,
+    "SELECT COUNT(*) AS total FROM visit_booking WHERE doctor_id = ?",
+    'i',
+    $doctor_id
+);
+
+// Status counts (all-time)
+$pendingAppointments = (int)medikit_fetch_scalar(
+    $conn,
+    "SELECT COUNT(*) AS total FROM visit_booking WHERE doctor_id = ? AND status = 'pending'",
+    'i',
+    $doctor_id
+);
+
+$acceptedAppointments = (int)medikit_fetch_scalar(
+    $conn,
+    "SELECT COUNT(*) AS total FROM visit_booking WHERE doctor_id = ? AND status = 'accepted'",
+    'i',
+    $doctor_id
+);
+
+$visitedAppointments = (int)medikit_fetch_scalar(
+    $conn,
+    "SELECT COUNT(*) AS total FROM visit_booking WHERE doctor_id = ? AND status = 'visited'",
+    'i',
+    $doctor_id
+);
+
+$rejectedAppointments = (int)medikit_fetch_scalar(
+    $conn,
+    "SELECT COUNT(*) AS total FROM visit_booking WHERE doctor_id = ? AND status = 'rejected'",
+    'i',
+    $doctor_id
+);
+
+// Upcoming scheduled appointments
+$upcomingAppointments = (int)medikit_fetch_scalar(
+    $conn,
+    "SELECT COUNT(*) AS total
+       FROM visit_booking
+      WHERE doctor_id = ?
+        AND appointment_date >= CURDATE()
+        AND status IN ('pending','accepted')",
+    'i',
+    $doctor_id
+);
+
+// Today's status breakdown
+$today_status = [
+    'pending' => 0,
+    'accepted' => 0,
+    'visited' => 0,
+    'rejected' => 0,
+];
+
+$today_stmt = $conn->prepare(
+    "SELECT status, COUNT(*) AS total
+       FROM visit_booking
+      WHERE doctor_id = ?
+        AND appointment_date = CURDATE()
+      GROUP BY status"
+);
+if ($today_stmt) {
+    $today_stmt->bind_param('i', $doctor_id);
+    $today_stmt->execute();
+    $today_res = $today_stmt->get_result();
+    while ($row = $today_res->fetch_assoc()) {
+        $s = (string)($row['status'] ?? '');
+        if ($s !== '' && array_key_exists($s, $today_status)) {
+            $today_status[$s] = (int)($row['total'] ?? 0);
+        }
+    }
+    $today_stmt->close();
+}
+
+$todayScheduled = $today_status['pending'] + $today_status['accepted'];
+$todayCompleted = $today_status['visited'];
+$todayCancelled = $today_status['rejected'];
+$todayAppointments = $todayScheduled + $todayCompleted + $todayCancelled;
+
+// Today's appointments list (for dashboard feed)
+$todayAppointmentsList = [];
+$today_list_stmt = $conn->prepare(
+    "SELECT vb.id AS booking_id,
+            vb.status,
+            p.firstname AS patient_firstname,
+            p.lastname AS patient_lastname,
+            dat.start_time,
+            dat.end_time
+       FROM visit_booking vb
+       LEFT JOIN patient p ON vb.patient_id = p.id
+       LEFT JOIN doctor_available_time dat ON vb.time_id = dat.id
+      WHERE vb.doctor_id = ?
+        AND vb.patient_id <> 0
+        AND vb.appointment_date = CURDATE()
+      ORDER BY (dat.start_time IS NULL) ASC, dat.start_time ASC, vb.id ASC
+      LIMIT 10"
+);
+if ($today_list_stmt) {
+    $today_list_stmt->bind_param('i', $doctor_id);
+    $today_list_stmt->execute();
+    $today_list_res = $today_list_stmt->get_result();
+    if ($today_list_res) {
+        while ($r = $today_list_res->fetch_assoc()) {
+            $todayAppointmentsList[] = $r;
+        }
+    }
+    $today_list_stmt->close();
+}
+
+// Prescriptions
+$prescriptionsCount = (int)medikit_fetch_scalar(
+    $conn,
+    "SELECT COUNT(*) AS total FROM clinic_prescriptions WHERE doctor_id = ?",
+    'i',
+    $doctor_id
+);
+
+// Revenue
+$todayRevenue = (float)medikit_fetch_scalar(
+    $conn,
+    "SELECT COALESCE(SUM(amount), 0) AS total
+       FROM clinic_bills
+      WHERE doctor_id = ?
+        AND payment_status = 'paid'
+        AND DATE(created_at) = CURDATE()",
+    'i',
+    $doctor_id
+);
+
+// Revenue breakdown by payment method (top 2 + other)
+$payment_methods = [];
+$pay_stmt = $conn->prepare(
+    "SELECT payment_method, COALESCE(SUM(amount), 0) AS total
+       FROM clinic_bills
+      WHERE doctor_id = ?
+        AND payment_status = 'paid'
+        AND DATE(created_at) = CURDATE()
+      GROUP BY payment_method
+      ORDER BY total DESC"
+);
+if ($pay_stmt) {
+    $pay_stmt->bind_param('i', $doctor_id);
+    $pay_stmt->execute();
+    $pay_res = $pay_stmt->get_result();
+    while ($row = $pay_res->fetch_assoc()) {
+        $payment_methods[] = [
+            'method' => (string)($row['payment_method'] ?? ''),
+            'total' => (float)($row['total'] ?? 0),
+        ];
+    }
+    $pay_stmt->close();
+}
+
+$rev_line_1 = $payment_methods[0] ?? ['method' => 'Cash', 'total' => 0];
+$rev_line_2 = $payment_methods[1] ?? ['method' => 'UPI', 'total' => 0];
+$rev_other_total = 0.0;
+for ($i = 2; $i < count($payment_methods); $i++) {
+    $rev_other_total += (float)($payment_methods[$i]['total'] ?? 0);
+}
+$rev_line_3 = ['method' => 'Other', 'total' => $rev_other_total];
+
+// Last 7 days performance (appointments + unique patients)
+$perf_map = [];
+$perf_pat_map = [];
+$perf_stmt = $conn->prepare(
+    "SELECT appointment_date,
+            COUNT(*) AS total,
+            COUNT(DISTINCT patient_id) AS patients
+       FROM visit_booking
+      WHERE doctor_id = ?
+        AND appointment_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 6 DAY) AND CURDATE()
+        AND status IN ('pending','accepted','visited')
+      GROUP BY appointment_date
+      ORDER BY appointment_date"
+);
+if ($perf_stmt) {
+    $perf_stmt->bind_param('i', $doctor_id);
+    $perf_stmt->execute();
+    $perf_res = $perf_stmt->get_result();
+    while ($row = $perf_res->fetch_assoc()) {
+        $d = (string)($row['appointment_date'] ?? '');
+        if ($d !== '') {
+            $perf_map[$d] = (int)($row['total'] ?? 0);
+            $perf_pat_map[$d] = (int)($row['patients'] ?? 0);
+        }
+    }
+    $perf_stmt->close();
+}
+
+$performanceLabels = [];
+$performanceCounts = [];
+$performancePatients = [];
+$sumAppointments = 0;
+$sumPatients = 0;
+
+$dt = new DateTimeImmutable('today -6 days');
+for ($i = 0; $i < 7; $i++) {
+    $d = $dt->format('Y-m-d');
+    $performanceLabels[] = $dt->format('D');
+    $count = (int)($perf_map[$d] ?? 0);
+    $pcount = (int)($perf_pat_map[$d] ?? 0);
+    $performanceCounts[] = $count;
+    $performancePatients[] = $pcount;
+    $sumAppointments += $count;
+    $sumPatients += $pcount;
+    $dt = $dt->modify('+1 day');
+}
+
+$avgAppointmentsPerDay = (int)round($sumAppointments / 7);
+$avgPatientsPerDay = (int)round($sumPatients / 7);
+
+// Last 7 days revenue
+$rev_map = [];
+$rev_stmt = $conn->prepare(
+    "SELECT DATE(created_at) AS day,
+            COALESCE(SUM(amount), 0) AS total
+       FROM clinic_bills
+      WHERE doctor_id = ?
+        AND payment_status = 'paid'
+        AND DATE(created_at) BETWEEN DATE_SUB(CURDATE(), INTERVAL 6 DAY) AND CURDATE()
+      GROUP BY DATE(created_at)
+      ORDER BY day"
+);
+if ($rev_stmt) {
+    $rev_stmt->bind_param('i', $doctor_id);
+    $rev_stmt->execute();
+    $rev_res = $rev_stmt->get_result();
+    while ($row = $rev_res->fetch_assoc()) {
+        $d = (string)($row['day'] ?? '');
+        if ($d !== '') {
+            $rev_map[$d] = (float)($row['total'] ?? 0);
+        }
+    }
+    $rev_stmt->close();
+}
+
+$revenueLabels = [];
+$revenueTotals = [];
+$dt = new DateTimeImmutable('today -6 days');
+for ($i = 0; $i < 7; $i++) {
+    $d = $dt->format('Y-m-d');
+    $revenueLabels[] = $dt->format('D');
+    $revenueTotals[] = (float)($rev_map[$d] ?? 0);
+    $dt = $dt->modify('+1 day');
+}
+
+// Patients not yet completed percentage (no patient limit)
+$patientPercent = 0;
+if ($totalPatients > 0) {
+    $patientPercent = (int)min(100, round(($incompletePatients / $totalPatients) * 100));
+}
+
+// Doctor Info
+$doctor = medikit_fetch_row(
+    $conn,
+    "SELECT u.firstname, u.lastname, u.profile_image, u.email, u.category_id, u.clinic_name, u.education,
+            GROUP_CONCAT(s.doctor_speciality SEPARATOR ', ') AS specialities,
+            COUNT(ds.id) as speciality_count
+       FROM users u
+       LEFT JOIN doctor_speciality ds ON ds.doctor_id = u.id
+       LEFT JOIN speciality s ON s.id = ds.speciality_id
+      WHERE u.id = ?
+      GROUP BY u.id",
+    'i',
+    $doctor_id
+);
+
+if (!is_array($doctor) || empty($doctor)) {
+    $doctor = [
+        'firstname' => 'Doctor',
+        'lastname' => '',
+        'profile_image' => '',
+        'email' => '',
+        'category_id' => null,
+        'clinic_name' => '',
+        'education' => '',
+        'specialities' => '',
+        'speciality_count' => 0,
+    ];
+}
+
+$doctor['profile_image'] = (string)($doctor['profile_image'] ?? '');
+
+$doctor_education_label = trim((string)($doctor['education'] ?? ''));
+$doctor_speciality_label = $doctor_education_label !== ''
+    ? $doctor_education_label
+    : 'MBBS, MD';
+
+$doctor_clinic_label = trim((string)($doctor['clinic_name'] ?? ''));
+
 // Check if profile setup is needed
-$needsProfileSetup = !$doctor['category_id'] || $doctor['speciality_count'] == 0;
+$needsProfileSetup = empty($doctor['category_id']) || (int)($doctor['speciality_count'] ?? 0) === 0;
+
+/* =======================
+   CALENDAR (month widget)
+======================= */
+
+$cal_month = isset($_GET['cal_month']) ? (int)$_GET['cal_month'] : (int)date('n');
+$cal_year = isset($_GET['cal_year']) ? (int)$_GET['cal_year'] : (int)date('Y');
+
+if ($cal_month < 1 || $cal_month > 12) {
+    $cal_month = (int)date('n');
+}
+if ($cal_year < 2000 || $cal_year > 2100) {
+    $cal_year = (int)date('Y');
+}
+
+$cal_first = sprintf('%04d-%02d-01', $cal_year, $cal_month);
+$cal_last = date('Y-m-t', strtotime($cal_first));
+
+$calendarCounts = [];
+$cal_stmt = $conn->prepare(
+    "SELECT appointment_date, status, COUNT(*) AS total
+       FROM visit_booking
+      WHERE doctor_id = ?
+        AND appointment_date BETWEEN ? AND ?
+      GROUP BY appointment_date, status"
+);
+if ($cal_stmt) {
+    $cal_stmt->bind_param('iss', $doctor_id, $cal_first, $cal_last);
+    $cal_stmt->execute();
+    $cal_res = $cal_stmt->get_result();
+    while ($row = $cal_res->fetch_assoc()) {
+        $d = (string)($row['appointment_date'] ?? '');
+        $s = (string)($row['status'] ?? '');
+        if ($d !== '' && $s !== '') {
+            if (!isset($calendarCounts[$d])) {
+                $calendarCounts[$d] = [];
+            }
+            $calendarCounts[$d][$s] = (int)($row['total'] ?? 0);
+        }
+    }
+    $cal_stmt->close();
+}
+
+$cal_prev_month = $cal_month - 1;
+$cal_prev_year = $cal_year;
+if ($cal_prev_month < 1) {
+    $cal_prev_month = 12;
+    $cal_prev_year--;
+}
+
+$cal_next_month = $cal_month + 1;
+$cal_next_year = $cal_year;
+if ($cal_next_month > 12) {
+    $cal_next_month = 1;
+    $cal_next_year++;
+}
+
+$qs_prev = $_GET;
+$qs_prev['cal_month'] = $cal_prev_month;
+$qs_prev['cal_year'] = $cal_prev_year;
+
+$qs_next = $_GET;
+$qs_next['cal_month'] = $cal_next_month;
+$qs_next['cal_year'] = $cal_next_year;
+
+$cal_prev_url = basename($_SERVER['PHP_SELF']) . '?' . http_build_query($qs_prev);
+$cal_next_url = basename($_SERVER['PHP_SELF']) . '?' . http_build_query($qs_next);
+
+$cal_month_label = date('F Y', strtotime($cal_first));
+$cal_days_in_month = (int)date('t', strtotime($cal_first));
+$cal_first_weekday = (int)date('N', strtotime($cal_first)); // 1 (Mon) .. 7 (Sun)
+$cal_offset = $cal_first_weekday - 1;
+$today_ymd = date('Y-m-d');
 
 // Fetch all categories
 $categories_result = mysqli_query($conn, "SELECT id, category_name FROM category ORDER BY category_name ASC");
@@ -89,7 +459,7 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doctor Dashboard - Medikit</title>
+    <title>Doctor Dashboard - Medkit</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -224,7 +594,7 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
 
         /* SIDEBAR */
         .sidebar {
-            width: 265px;
+            width: 280px;
             position: fixed;
             left: 0;
             top: 60px;
@@ -232,7 +602,14 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
             background: #ffffff;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
             overflow-y: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
             z-index: 1000;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 0;
+            height: 0;
         }
 
         .doctor-profile-sidebar {
@@ -525,6 +902,65 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
             margin-bottom: 20px;
         }
 
+        /* TODAY APPOINTMENTS LIST */
+        .today-appointments-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .today-appointment-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            border: 1px solid #e6edf7;
+            background: #f6f8fc;
+            border-radius: 14px;
+        }
+
+        .today-appointment-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .today-appointment-time {
+            font-size: 12px;
+            font-weight: 700;
+            color: #1f2a44;
+            background: #ffffff;
+            border: 1px solid #e6edf7;
+            padding: 6px 10px;
+            border-radius: 12px;
+            white-space: nowrap;
+        }
+
+        .today-appointment-patient {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .today-appointment-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        .today-appointment-status .mini-calendar-dot {
+            width: 8px;
+            height: 8px;
+        }
+
         /* RIGHT SIDEBAR PROFILE */
         .right-profile-card {
             position: sticky;
@@ -606,9 +1042,15 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
 
         .percentage-circle {
             position: relative;
-            width: 100px;
-            height: 100px;
+            width: 80px;
+            height: 80px;
             margin: 0 auto;
+        }
+
+        .percentage-circle svg {
+            width: 100%;
+            height: 100%;
+            display: block;
         }
 
         .percentage-text {
@@ -619,6 +1061,157 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
             font-size: 20px;
             font-weight: 700;
             color: #ff6b6b;
+        }
+
+        /* DASHBOARD CHARTS (Chart.js) */
+        .medikit-chart-square {
+            width: 160px;
+            height: 160px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .medikit-chart-bar {
+            width: 100%;
+            height: 150px;
+            position: relative;
+        }
+
+        .medikit-chart-area {
+            width: 100%;
+            height: 120px;
+            position: relative;
+        }
+
+        .medikit-chart-square canvas,
+        .medikit-chart-bar canvas,
+        .medikit-chart-area canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* MINI CALENDAR */
+        .mini-calendar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .mini-calendar-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1f2a44;
+        }
+
+        .mini-calendar-nav {
+            display: flex;
+            gap: 8px;
+        }
+
+        .mini-calendar-nav a {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            border: 1px solid #e6edf7;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: background 0.2s ease;
+        }
+
+        .mini-calendar-nav a:hover {
+            background: #e9ecef;
+        }
+
+        .mini-calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .mini-calendar-weekday {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: #999;
+        }
+
+        .mini-calendar-day {
+            text-align: center;
+            background: #f6f8fc;
+            border: 1px solid #e6edf7;
+            border-radius: 12px;
+            padding: 8px 0;
+            min-height: 54px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mini-calendar-day.empty {
+            background: transparent;
+            border: none;
+        }
+
+        .mini-calendar-day.today {
+            background: #e8f0fe;
+            border-color: #5a8dee;
+        }
+
+        .mini-calendar-date {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1f2a44;
+            line-height: 1;
+        }
+
+        .mini-calendar-dots {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-top: 7px;
+            height: 8px;
+        }
+
+        .mini-calendar-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .mini-calendar-dot.scheduled {
+            background: #3b82f6;
+        }
+
+        .mini-calendar-dot.completed {
+            background: #10b981;
+        }
+
+        .mini-calendar-dot.cancelled {
+            background: #ef4444;
+        }
+
+        .mini-calendar-legend {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 14px;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .mini-calendar-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
         }
 
         @media (max-width: 1200px) {
@@ -747,7 +1340,7 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
         <div class="header-left">
             <div class="logo">
                 <i class="fa-solid fa-stethoscope"></i>
-                <span>Medikit</span>
+                <span>Medkit</span>
             </div>
             <button class="menu-toggle">
                 <i class="fas fa-bars"></i>
@@ -798,7 +1391,7 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
                 </div>
             </div>
             <img src="https://flagcdn.com/w40/us.png" alt="US" class="flag-icon">
-            <div class="user-profile">
+            <a href="doctor_profile.php" class="user-profile text-decoration-none" title="View Profile" aria-label="View Profile">
                 <span class="user-name"><?= htmlspecialchars($doctor['firstname'] . ' ' . $doctor['lastname']) ?></span>
                 <?php
                 $doctor_avatar_src = (!empty($doctor['profile_image']) && file_exists(__DIR__ . '/' . $doctor['profile_image']))
@@ -806,7 +1399,7 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
                     : "https://ui-avatars.com/api/?name=" . urlencode($doctor['firstname'] . '+' . $doctor['lastname']) . "&background=5a8dee&color=fff";
                 ?>
                 <img src="<?= htmlspecialchars($doctor_avatar_src) ?>" alt="Profile" class="user-avatar">
-            </div>
+            </a>
         </div>
     </div>
 
@@ -860,7 +1453,7 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
                 <i class="fas fa-users"></i>
                 <span>Patients</span>
             </a>
-            <a href="#" class="nav-item">
+            <a href="doctor_analytics.php" class="nav-item">
                 <i class="fas fa-chart-line"></i>
                 <span>Analytics</span>
             </a>
@@ -868,13 +1461,13 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
                 <i class="fas fa-file-invoice-dollar"></i>
                 <span>Billing</span>
             </a>
-            <a href="#" class="nav-item">
-                <i class="fas fa-file-medical"></i>
-                <span>Medical Certificates</span>
+            <a href="doctor_prescriptions.php" class="nav-item">
+                <i class="fas fa-file-prescription"></i>
+                <span>Prescriptions</span>
             </a>
-            <a href="#" class="nav-item">
-                <i class="fas fa-notes-medical"></i>
-                <span>Consultations Note</span>
+            <a href="logout.php" class="nav-item">
+                <i class="fas fa-right-from-bracket"></i>
+                <span>Logout</span>
             </a>
         </nav>
     </div>
@@ -907,7 +1500,7 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
                 <div class="col-md-7">
                     <div class="welcome-text">Welcome back</div>
                     <div class="doctor-name-large">DR. <?= htmlspecialchars(strtoupper($doctor['firstname'] . ' ' . $doctor['lastname'])) ?>!</div>
-                    <div class="speciality"><?= htmlspecialchars($doctor['specialities'] ?: 'Gynecologist, MBBS,MD') ?></div>
+                    <div class="speciality"><?= htmlspecialchars($doctor_speciality_label) ?></div>
 
                     <!-- Stat Boxes -->
                     <div class="stat-boxes">
@@ -916,12 +1509,12 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
                             <div class="stat-box-value"><?= $todayAppointments ?>+</div>
                         </div>
                         <div class="stat-box pink">
-                            <div class="stat-box-label">Surgeries</div>
-                            <div class="stat-box-value">3+</div>
+                            <div class="stat-box-label">Scheduled</div>
+                            <div class="stat-box-value"><?= $todayScheduled ?>+</div>
                         </div>
                         <div class="stat-box green">
-                            <div class="stat-box-label">Room Visit</div>
-                            <div class="stat-box-value"><?= $visitedAppointments ?>+</div>
+                            <div class="stat-box-label">Completed</div>
+                            <div class="stat-box-value"><?= $todayCompleted ?>+</div>
                         </div>
                     </div>
                 </div>
@@ -946,31 +1539,24 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
                             <div class="text-muted" style="font-size: 13px; margin-bottom: 15px;">Today's Summary</div>
 
                             <div class="text-center mb-4">
-                                <!-- Simple Donut Chart Placeholder -->
-                                <svg width="160" height="160" viewBox="0 0 160 160">
-                                    <circle cx="80" cy="80" r="60" fill="none" stroke="#e5e7eb" stroke-width="20"></circle>
-                                    <circle cx="80" cy="80" r="60" fill="none" stroke="#3b82f6" stroke-width="20"
-                                        stroke-dasharray="100 377" stroke-dashoffset="0" transform="rotate(-90 80 80)"></circle>
-                                    <circle cx="80" cy="80" r="60" fill="none" stroke="#10b981" stroke-width="20"
-                                        stroke-dasharray="90 377" stroke-dashoffset="-100" transform="rotate(-90 80 80)"></circle>
-                                    <circle cx="80" cy="80" r="60" fill="none" stroke="#ef4444" stroke-width="20"
-                                        stroke-dasharray="30 377" stroke-dashoffset="-190" transform="rotate(-90 80 80)"></circle>
-                                </svg>
+                                <div class="medikit-chart-square">
+                                    <canvas id="appointmentsDonut" aria-label="Appointments chart" role="img"></canvas>
+                                </div>
                                 <div style="margin-top: -100px; font-size: 24px; font-weight: 700; color: #333;">
-                                    <?= $todayAppointments + $pendingAppointments + $visitedAppointments ?>
+                                    <?= (int)$todayAppointments ?>
                                 </div>
                                 <div style="font-size: 13px; color: #999;">Total</div>
                             </div>
 
                             <div style="font-size: 13px;">
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span><i class="fas fa-circle" style="color: #3b82f6; font-size: 8px;"></i> Scheduled: 28</span>
+                                    <span><i class="fas fa-circle" style="color: #3b82f6; font-size: 8px;"></i> Scheduled: <?= (int)$todayScheduled ?></span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span><i class="fas fa-circle" style="color: #10b981; font-size: 8px;"></i> Completed: 24</span>
+                                    <span><i class="fas fa-circle" style="color: #10b981; font-size: 8px;"></i> Completed: <?= (int)$todayCompleted ?></span>
                                 </div>
                                 <div class="d-flex justify-content-between">
-                                    <span><i class="fas fa-circle" style="color: #ef4444; font-size: 8px;"></i> Cancelled: 4</span>
+                                    <span><i class="fas fa-circle" style="color: #ef4444; font-size: 8px;"></i> Cancelled: <?= (int)$todayCancelled ?></span>
                                 </div>
                             </div>
                         </div>
@@ -985,25 +1571,17 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
                             </div>
                             <div class="text-muted" style="font-size: 13px; margin-bottom: 15px;">Daily metrics</div>
 
-                            <!-- Bar Chart Placeholder -->
-                            <div class="text-center mb-3">
-                                <svg width="100%" height="140" viewBox="0 0 280 140">
-                                    <rect x="20" y="60" width="30" height="80" fill="#10b981" opacity="0.7" rx="4"></rect>
-                                    <rect x="60" y="40" width="30" height="100" fill="#10b981" opacity="0.7" rx="4"></rect>
-                                    <rect x="100" y="70" width="30" height="70" fill="#10b981" opacity="0.7" rx="4"></rect>
-                                    <rect x="140" y="30" width="30" height="110" fill="#10b981" opacity="0.7" rx="4"></rect>
-                                    <rect x="180" y="50" width="30" height="90" fill="#10b981" opacity="0.7" rx="4"></rect>
-                                    <rect x="220" y="45" width="30" height="95" fill="#10b981" opacity="0.7" rx="4"></rect>
-                                </svg>
+                            <div class="medikit-chart-bar mb-3">
+                                <canvas id="performanceBar" aria-label="Performance chart" role="img"></canvas>
                             </div>
 
                             <div class="d-flex justify-content-between align-items-center">
                                 <div class="text-center flex-fill">
-                                    <div style="color: #10b981; font-size: 20px; font-weight: 700;">18 min</div>
-                                    <div style="font-size: 12px; color: #999;">Avg. Consultation</div>
+                                    <div style="color: #10b981; font-size: 20px; font-weight: 700;"><?= (int)$avgAppointmentsPerDay ?></div>
+                                    <div style="font-size: 12px; color: #999;">Avg. Appointments</div>
                                 </div>
                                 <div class="text-center flex-fill">
-                                    <div style="color: #10b981; font-size: 20px; font-weight: 700;">24</div>
+                                    <div style="color: #10b981; font-size: 20px; font-weight: 700;"><?= (int)$avgPatientsPerDay ?></div>
                                     <div style="font-size: 12px; color: #999;">Patients/Day</div>
                                 </div>
                             </div>
@@ -1017,40 +1595,91 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
                                 <h6 class="card-title mb-0">Today's Revenue</h6>
                                 <i class="fas fa-dollar-sign" style="color: #3b82f6; font-size: 20px;"></i>
                             </div>
-                            <div style="font-size: 28px; font-weight: 700; color: #3b82f6; margin-bottom: 15px;">$4,250</div>
+                            <div style="font-size: 28px; font-weight: 700; color: #3b82f6; margin-bottom: 15px;">
+                                <?= htmlspecialchars($currency_symbol) ?><?= number_format((float)$todayRevenue, 0) ?>
+                            </div>
 
-                            <!-- Area Chart Placeholder -->
-                            <svg width="100%" height="120" viewBox="0 0 280 120">
-                                <defs>
-                                    <linearGradient id="grad1" x1="0%" y1="0%" x2="0%" y2="100%">
-                                        <stop offset="0%" style="stop-color:#a78bfa;stop-opacity:0.3" />
-                                        <stop offset="100%" style="stop-color:#a78bfa;stop-opacity:0.05" />
-                                    </linearGradient>
-                                    <linearGradient id="grad2" x1="0%" y1="0%" x2="0%" y2="100%">
-                                        <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.3" />
-                                        <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0.05" />
-                                    </linearGradient>
-                                    <linearGradient id="grad3" x1="0%" y1="0%" x2="0%" y2="100%">
-                                        <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.3" />
-                                        <stop offset="100%" style="stop-color:#10b981;stop-opacity:0.05" />
-                                    </linearGradient>
-                                </defs>
-                                <path d="M 0,80 Q 70,60 140,70 T 280,50 L 280,120 L 0,120 Z" fill="url(#grad1)"></path>
-                                <path d="M 0,90 Q 70,75 140,80 T 280,65 L 280,120 L 0,120 Z" fill="url(#grad2)"></path>
-                                <path d="M 0,100 Q 70,90 140,95 T 280,85 L 280,120 L 0,120 Z" fill="url(#grad3)"></path>
-                            </svg>
+                            <div class="medikit-chart-area">
+                                <canvas id="revenueArea" aria-label="Revenue chart" role="img"></canvas>
+                            </div>
 
                             <div style="font-size: 11px; margin-top: 10px;">
                                 <div class="d-flex justify-content-between mb-1">
-                                    <span><i class="fas fa-circle" style="color: #10b981; font-size: 6px;"></i> Walk-ins: $1,850</span>
+                                    <span><i class="fas fa-circle" style="color: #10b981; font-size: 6px;"></i> <?= htmlspecialchars($rev_line_1['method']) ?>: <?= htmlspecialchars($currency_symbol) ?><?= number_format((float)$rev_line_1['total'], 0) ?></span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-1">
-                                    <span><i class="fas fa-circle" style="color: #3b82f6; font-size: 6px;"></i> Follow-ups: $1,200</span>
+                                    <span><i class="fas fa-circle" style="color: #3b82f6; font-size: 6px;"></i> <?= htmlspecialchars($rev_line_2['method']) ?>: <?= htmlspecialchars($currency_symbol) ?><?= number_format((float)$rev_line_2['total'], 0) ?></span>
                                 </div>
                                 <div class="d-flex justify-content-between">
-                                    <span><i class="fas fa-circle" style="color: #a78bfa; font-size: 6px;"></i> Online: $1,200</span>
+                                    <span><i class="fas fa-circle" style="color: #a78bfa; font-size: 6px;"></i> <?= htmlspecialchars($rev_line_3['method']) ?>: <?= htmlspecialchars($currency_symbol) ?><?= number_format((float)$rev_line_3['total'], 0) ?></span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Today's Appointments Feed -->
+                <div class="row g-4 mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="card-title mb-0">Today's Appointments</h6>
+                                <a href="booking.php" class="btn btn-sm btn-outline-primary fw-semibold">View All</a>
+                            </div>
+                            <div class="text-muted" style="font-size: 13px; margin-bottom: 15px;">Live schedule for <?= htmlspecialchars(date('d M, Y')) ?></div>
+
+                            <?php if (empty($todayAppointmentsList)): ?>
+                                <div class="text-center py-4" style="background:#f6f8fc;border:1px solid #e6edf7;border-radius:14px;">
+                                    <div class="fw-semibold" style="color:#1f2a44;">No appointments today</div>
+                                    <div class="text-muted" style="font-size: 13px;">New bookings will appear here.</div>
+                                </div>
+                            <?php else: ?>
+                                <div class="today-appointments-list">
+                                    <?php foreach ($todayAppointmentsList as $appt): ?>
+                                        <?php
+                                        $pfirst = trim((string)($appt['patient_firstname'] ?? ''));
+                                        $plast = trim((string)($appt['patient_lastname'] ?? ''));
+                                        $patientName = trim($pfirst . ' ' . $plast);
+                                        if ($patientName === '') {
+                                            $patientName = 'Patient';
+                                        }
+
+                                        $st = (string)($appt['start_time'] ?? '');
+                                        $et = (string)($appt['end_time'] ?? '');
+                                        $timeLabel = 'Time TBA';
+                                        if ($st !== '') {
+                                            $timeLabel = date('g:i A', strtotime($st));
+                                            if ($et !== '') {
+                                                $timeLabel .= ' - ' . date('g:i A', strtotime($et));
+                                            }
+                                        }
+
+                                        $statusRaw = strtolower(trim((string)($appt['status'] ?? '')));
+                                        $dotClass = 'scheduled';
+                                        $statusLabel = 'Scheduled';
+                                        if ($statusRaw === 'visited') {
+                                            $dotClass = 'completed';
+                                            $statusLabel = 'Completed';
+                                        } elseif ($statusRaw === 'rejected') {
+                                            $dotClass = 'cancelled';
+                                            $statusLabel = 'Cancelled';
+                                        }
+                                        ?>
+                                        <div class="today-appointment-item">
+                                            <div class="today-appointment-left">
+                                                <div class="today-appointment-time"><?= htmlspecialchars($timeLabel) ?></div>
+                                                <div class="today-appointment-patient" title="<?= htmlspecialchars($patientName) ?>">
+                                                    <?= htmlspecialchars($patientName) ?>
+                                                </div>
+                                            </div>
+                                            <div class="today-appointment-status" title="<?= htmlspecialchars($statusLabel) ?>">
+                                                <span class="mini-calendar-dot <?= htmlspecialchars($dotClass) ?>"></span>
+                                                <span><?= htmlspecialchars($statusLabel) ?></span>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -1068,48 +1697,115 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
                     <?php endif; ?>
 
                     <div class="profile-card-name">Dr. <?= htmlspecialchars($doctor['firstname'] . ' ' . $doctor['lastname']) ?></div>
-                    <div class="profile-card-spec"><?= htmlspecialchars($doctor['specialities'] ?: 'Orthopedics') ?> - Restar Hospital</div>
+                    <div class="profile-card-spec"><?= htmlspecialchars(trim((string)($doctor['specialities'] ?? '')) !== '' ? (string)$doctor['specialities'] : 'General Medicine') ?> - <?= htmlspecialchars($doctor_clinic_label !== '' ? $doctor_clinic_label : 'Clinic') ?></div>
 
                     <!-- Patients Stats -->
                     <div class="profile-stats-box">
                         <div class="profile-stat-row">
                             <div>
-                                <div class="profile-stat-value" style="color: #333;">3,897</div>
+                                <div class="profile-stat-value" style="color: #333;"><?= number_format((int)$totalPatients) ?></div>
                                 <div class="profile-stat-label">Patients</div>
                             </div>
-                            <div>
-                                <svg viewBox="0 0 36 36" style="width: 80px; height: 80px;">
+                            <div class="percentage-circle" aria-label="Patients with pending/accepted appointments percentage">
+                                <svg viewBox="0 0 36 36" role="img" aria-label="Pending patients percentage">
                                     <circle cx="18" cy="18" r="16" fill="none" stroke="#e5e7eb" stroke-width="3"></circle>
-                                    <circle cx="18" cy="18" r="16" fill="none" stroke="#ff6b6b" stroke-width="3" stroke-dasharray="60, 100" stroke-linecap="round" transform="rotate(-90 18 18)"></circle>
+                                    <circle cx="18" cy="18" r="16" fill="none" stroke="#ff6b6b" stroke-width="3" stroke-dasharray="<?= (int)$patientPercent ?>, 100" stroke-linecap="round" transform="rotate(-90 18 18)"></circle>
                                 </svg>
-                                <div class="percentage-text" style="margin-top: -60px;">60%</div>
+                                <div class="percentage-text"><?= (int)$patientPercent ?>%</div>
                             </div>
                         </div>
-                        <div class="text-muted" style="font-size: 12px; margin-top: 10px;">8,000 Patients Limit</div>
                     </div>
 
                     <!-- Surgery & Consultation -->
                     <div class="profile-stat-row" style="margin-top: 20px;">
                         <div class="profile-stat-item">
-                            <div style="font-size: 12px; color: #999; margin-bottom: 5px;">Surgery</div>
-                            <div class="profile-stat-value">578</div>
+                            <div style="font-size: 12px; color: #999; margin-bottom: 5px;">Prescriptions</div>
+                            <div class="profile-stat-value"><?= number_format((int)$prescriptionsCount) ?></div>
                         </div>
                         <div class="profile-stat-item">
                             <div style="font-size: 12px; color: #999; margin-bottom: 5px;">Consultation</div>
-                            <div class="profile-stat-value">387</div>
+                            <div class="profile-stat-value"><?= number_format((int)$visitedAppointments) ?></div>
                         </div>
                     </div>
 
                     <!-- Patients & Appointment -->
                     <div class="profile-stat-row" style="margin-top: 15px;">
                         <div class="profile-stat-item">
-                            <div style="font-size: 12px; color: #999; margin-bottom: 5px;">Patients</div>
-                            <div class="profile-stat-value">4,257</div>
+                            <div style="font-size: 12px; color: #999; margin-bottom: 5px;">Pending</div>
+                            <div class="profile-stat-value"><?= number_format((int)$pendingAppointments) ?></div>
                         </div>
                         <div class="profile-stat-item">
-                            <div style="font-size: 12px; color: #999; margin-bottom: 5px;">Appointment</div>
-                            <div class="profile-stat-value">1,243</div>
+                            <div style="font-size: 12px; color: #999; margin-bottom: 5px;">Appointments</div>
+                            <div class="profile-stat-value"><?= number_format((int)$totalAppointments) ?></div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Calendar Card -->
+                <div class="card mt-4">
+                    <div class="mini-calendar-header">
+                        <div class="mini-calendar-title"><?= htmlspecialchars($cal_month_label) ?></div>
+                        <div class="mini-calendar-nav">
+                            <a href="<?= htmlspecialchars($cal_prev_url) ?>" aria-label="Previous month"><i class="fas fa-chevron-left"></i></a>
+                            <a href="<?= htmlspecialchars($cal_next_url) ?>" aria-label="Next month"><i class="fas fa-chevron-right"></i></a>
+                        </div>
+                    </div>
+
+                    <div class="mini-calendar-grid" aria-label="Appointments calendar">
+                        <div class="mini-calendar-weekday">M</div>
+                        <div class="mini-calendar-weekday">T</div>
+                        <div class="mini-calendar-weekday">W</div>
+                        <div class="mini-calendar-weekday">T</div>
+                        <div class="mini-calendar-weekday">F</div>
+                        <div class="mini-calendar-weekday">S</div>
+                        <div class="mini-calendar-weekday">S</div>
+
+                        <?php for ($i = 0; $i < $cal_offset; $i++): ?>
+                            <div class="mini-calendar-day empty"></div>
+                        <?php endfor; ?>
+
+                        <?php for ($day = 1; $day <= $cal_days_in_month; $day++): ?>
+                            <?php
+                            $d_str = sprintf('%04d-%02d-%02d', (int)$cal_year, (int)$cal_month, (int)$day);
+                            $counts = $calendarCounts[$d_str] ?? [];
+                            $scheduled_count = (int)($counts['pending'] ?? 0) + (int)($counts['accepted'] ?? 0);
+                            $completed_count = (int)($counts['visited'] ?? 0);
+                            $cancelled_count = (int)($counts['rejected'] ?? 0);
+
+                            $classes = 'mini-calendar-day';
+                            if ($d_str === $today_ymd) {
+                                $classes .= ' today';
+                            }
+
+                            $title_parts = [];
+                            if ($scheduled_count > 0) $title_parts[] = 'Scheduled: ' . $scheduled_count;
+                            if ($completed_count > 0) $title_parts[] = 'Completed: ' . $completed_count;
+                            if ($cancelled_count > 0) $title_parts[] = 'Cancelled: ' . $cancelled_count;
+                            $title_attr = !empty($title_parts) ? implode(' | ', $title_parts) : '';
+                            ?>
+                            <div class="<?= htmlspecialchars($classes) ?>" <?= $title_attr !== '' ? 'title="' . htmlspecialchars($title_attr) . '"' : '' ?>>
+                                <div class="mini-calendar-date"><?= (int)$day ?></div>
+                                <div class="mini-calendar-dots">
+                                    <?php if ($scheduled_count > 0): ?><span class="mini-calendar-dot scheduled"></span><?php endif; ?>
+                                    <?php if ($completed_count > 0): ?><span class="mini-calendar-dot completed"></span><?php endif; ?>
+                                    <?php if ($cancelled_count > 0): ?><span class="mini-calendar-dot cancelled"></span><?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endfor; ?>
+
+                        <?php
+                        $total_cells = $cal_offset + $cal_days_in_month;
+                        $remaining = (7 - ($total_cells % 7)) % 7;
+                        for ($i = 0; $i < $remaining; $i++):
+                        ?>
+                            <div class="mini-calendar-day empty"></div>
+                        <?php endfor; ?>
+                    </div>
+
+                    <div class="mini-calendar-legend">
+                        <div class="mini-calendar-legend-item"><span class="mini-calendar-dot scheduled"></span> Scheduled</div>
+                        <div class="mini-calendar-legend-item"><span class="mini-calendar-dot completed"></span> Completed</div>
+                        <div class="mini-calendar-legend-item"><span class="mini-calendar-dot cancelled"></span> Cancelled</div>
                     </div>
                 </div>
             </div>
@@ -1173,6 +1869,7 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
         // Show profile setup modal if needed
         <?php if ($needsProfileSetup): ?>
@@ -1312,6 +2009,163 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
                     closeMenu();
                 }
             });
+        })();
+
+        // Dashboard charts (Chart.js)
+        (function() {
+            if (typeof Chart === 'undefined') return;
+
+            Chart.defaults.font.family = 'Poppins, sans-serif';
+
+            const donutData = <?= json_encode([(int)$todayScheduled, (int)$todayCompleted, (int)$todayCancelled], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+            const perfLabels = <?= json_encode($performanceLabels, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+            const perfCounts = <?= json_encode($performanceCounts, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+            const revLabels = <?= json_encode($revenueLabels, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+            const revTotals = <?= json_encode($revenueTotals, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+
+            const donutEl = document.getElementById('appointmentsDonut');
+            if (donutEl) {
+                new Chart(donutEl, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Scheduled', 'Completed', 'Cancelled'],
+                        datasets: [{
+                            data: donutData,
+                            backgroundColor: ['#3b82f6', '#10b981', '#ef4444'],
+                            borderWidth: 0,
+                            hoverOffset: 2,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '72%',
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        const v = typeof ctx.raw === 'number' ? ctx.raw : 0;
+                                        return ' ' + ctx.label + ': ' + v;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const perfEl = document.getElementById('performanceBar');
+            if (perfEl) {
+                new Chart(perfEl, {
+                    type: 'bar',
+                    data: {
+                        labels: perfLabels,
+                        datasets: [{
+                            data: perfCounts,
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                            borderRadius: 6,
+                            maxBarThickness: 22,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        const v = typeof ctx.raw === 'number' ? ctx.raw : 0;
+                                        return ' Appointments: ' + v;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: '#999',
+                                    font: {
+                                        size: 11
+                                    }
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(230, 237, 247, 0.8)'
+                                },
+                                ticks: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const revEl = document.getElementById('revenueArea');
+            if (revEl) {
+                new Chart(revEl, {
+                    type: 'line',
+                    data: {
+                        labels: revLabels,
+                        datasets: [{
+                            data: revTotals,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: 0,
+                            borderWidth: 2,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        const v = typeof ctx.raw === 'number' ? ctx.raw : 0;
+                                        return ' Revenue: ' + v;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    display: false
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            }
         })();
     </script>
 

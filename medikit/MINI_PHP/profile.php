@@ -22,7 +22,7 @@ if (isset($_SESSION['message'])) {
 }
 
 // Prepare and execute query to get patient details
-$stmt = $conn->prepare("SELECT firstname, lastname, phone_number, date_of_birth, gender, address FROM patient WHERE id = ?");
+$stmt = $conn->prepare("SELECT firstname, lastname, email, phone_number, date_of_birth, gender, address FROM patient WHERE id = ?");
 $stmt->bind_param("i", $patient_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -42,10 +42,10 @@ $stmt->close();
                 <div class="card-body p-4 p-md-5">
 
                     <?php if ($msg): ?>
-                    <div class="alert alert-<?php echo $msg_type; ?> alert-dismissible fade show" role="alert">
-                        <?php echo $msg; ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
+                        <div class="alert alert-<?php echo $msg_type; ?> alert-dismissible fade show" role="alert">
+                            <?php echo $msg; ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
                     <?php endif; ?>
 
                     <div class="text-center mb-5">
@@ -58,12 +58,13 @@ $stmt->close();
 
                     <div class="profile-details">
                         <p><strong>Full Name:</strong> <?php echo htmlspecialchars($patient_details['firstname'] . ' ' . $patient_details['lastname']); ?></p>
+                        <p><strong>Email:</strong> <?php echo htmlspecialchars($patient_details['email'] ?? '—'); ?></p>
                         <p><strong>Phone Number:</strong> <?php echo htmlspecialchars($patient_details['phone_number']); ?></p>
                         <p><strong>Date of Birth:</strong> <?php echo htmlspecialchars(date("F j, Y", strtotime($patient_details['date_of_birth']))); ?></p>
                         <p><strong>Gender:</strong> <?php echo htmlspecialchars($patient_details['gender']); ?></p>
                         <p><strong>Address:</strong> <?php echo htmlspecialchars($patient_details['address']); ?></p>
                     </div>
-                    
+
                     <hr class="my-4">
                     <div class="text-center">
                         <a href="edit_profile.php" class="btn btn-primary">Edit Profile</a>

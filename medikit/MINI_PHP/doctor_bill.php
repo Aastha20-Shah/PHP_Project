@@ -4,6 +4,8 @@ include("config.php");
 include("billing_helpers.php");
 include("profile_image_helpers.php");
 include("doctor_notification_helpers.php");
+include("admin_helpers.php");
+include_once("mailer_helpers.php");
 
 if (!isset($_SESSION['doctor_id'])) {
   header("Location: login.php");
@@ -14,6 +16,8 @@ $doctor_id = (int)$_SESSION['doctor_id'];
 
 $notifications = medikit_doctor_unseen_notifications_list($conn, $doctor_id, 5);
 $notification_count = medikit_doctor_unseen_notifications_count($conn, $doctor_id);
+
+$schema_error = '';
 
 try {
   billing_ensure_schema($conn);
@@ -198,6 +202,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($schema_error)) {
 
     $bill = fetch_bill_by_id($conn, $doctor_id, $bill_id);
     $success = 'Bill saved successfully.';
+
+    if ($bill_id > 0) {
+      medikit_commission_upsert_for_booking($conn, (int)$booking_id_post);
+
+      $mailRes = medikit_send_patient_completed_documents_email_if_ready($conn, (int)$booking_id_post);
+      $mailStatus = (string)($mailRes['status'] ?? '');
+
+      if ($mailStatus === 'sent') {
+        $success .= ' Bill & prescription emailed to patient.';
+      } elseif ($mailStatus === 'pending_prescription') {
+        $success .= ' (Prescription not created yet; email will be sent after prescription.)';
+      } elseif ($mailStatus === 'mail_disabled') {
+        $success .= ' (Email is disabled/not configured.)';
+      } elseif ($mailStatus === 'send_failed') {
+        $success .= ' (Could not email bill & prescription.)';
+      }
+    }
   }
 }
 
@@ -212,23 +233,21 @@ $time_label = '-';
 $date_label = '-';
 $patient_name = '-';
 if ($booking) {
-  $patient_name = trim(($booking['patient_firstname'] ?? '') . ' ' . ($booking['patient_lastname'] ?? ''));
+  $patient_name = trim((string)($booking['patient_firstname'] ?? '') . ' ' . (string)($booking['patient_lastname'] ?? ''));
   if (!empty($booking['appointment_date'])) {
     $date_label = date("F j, Y", strtotime((string)$booking['appointment_date']));
   }
   if (!empty($booking['start_time'])) {
     $time_label = date("g:i A", strtotime((string)$booking['start_time']));
+    if (!empty($booking['end_time'])) {
+      $time_label .= ' - ' . date("g:i A", strtotime((string)$booking['end_time']));
+    }
   }
 }
 
 $method_options = [
   'Cash',
-  'Credit Card',
-  'Debit Card',
-  'UPI',
-  'Net Banking',
-  'Insurance',
-  'Other',
+  'Online',
 ];
 
 $redirect_qs = '';
@@ -379,7 +398,7 @@ if ($bill_id > 0) {
 
     /* SIDEBAR */
     .sidebar {
-      width: 265px;
+      width: 280px;
       position: fixed;
       left: 0;
       top: 60px;
@@ -387,7 +406,14 @@ if ($bill_id > 0) {
       background: #ffffff;
       box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
       overflow-y: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
       z-index: 1000;
+    }
+
+    .sidebar::-webkit-scrollbar {
+      width: 0;
+      height: 0;
     }
 
     .doctor-profile-sidebar {
@@ -596,7 +622,7 @@ if ($bill_id > 0) {
     <div class="header-left">
       <div class="logo">
         <i class="fa-solid fa-stethoscope"></i>
-        <span>Medikit</span>
+        <span>Medkit</span>
       </div>
       <button class="menu-toggle" type="button" aria-label="Menu">
         <i class="fas fa-bars"></i>
@@ -650,7 +676,7 @@ if ($bill_id > 0) {
         </div>
       </div>
       <img src="https://flagcdn.com/w40/us.png" alt="US" class="flag-icon">
-      <div class="user-profile">
+      <a href="doctor_profile.php" class="user-profile text-decoration-none" title="View Profile" aria-label="View Profile">
         <span class="user-name"><?= htmlspecialchars($doctor['firstname'] . ' ' . $doctor['lastname']) ?></span>
         <?php
         $doctor_avatar_src = (!empty($doctor['profile_image']) && file_exists(__DIR__ . '/' . $doctor['profile_image']))
@@ -658,7 +684,7 @@ if ($bill_id > 0) {
           : "https://ui-avatars.com/api/?name=" . urlencode($doctor['firstname'] . '+' . $doctor['lastname']) . "&background=5a8dee&color=fff";
         ?>
         <img src="<?= htmlspecialchars($doctor_avatar_src) ?>" alt="Profile" class="user-avatar">
-      </div>
+      </a>
     </div>
   </div>
 
@@ -714,7 +740,7 @@ if ($bill_id > 0) {
         <i class="fas fa-users"></i>
         <span>Patients</span>
       </a>
-      <a href="#" class="nav-item">
+      <a href="doctor_analytics.php" class="nav-item">
         <i class="fas fa-chart-line"></i>
         <span>Analytics</span>
       </a>
@@ -722,13 +748,13 @@ if ($bill_id > 0) {
         <i class="fas fa-file-invoice-dollar"></i>
         <span>Billing</span>
       </a>
-      <a href="#" class="nav-item">
-        <i class="fas fa-file-medical"></i>
-        <span>Medical Certificates</span>
+      <a href="doctor_prescriptions.php" class="nav-item">
+        <i class="fas fa-file-prescription"></i>
+        <span>Prescriptions</span>
       </a>
-      <a href="#" class="nav-item">
-        <i class="fas fa-notes-medical"></i>
-        <span>Consultations Note</span>
+      <a href="logout.php" class="nav-item">
+        <i class="fas fa-right-from-bracket"></i>
+        <span>Logout</span>
       </a>
     </nav>
   </div>
@@ -816,7 +842,7 @@ if ($bill_id > 0) {
                 <input type="number" name="amount" step="0.01" min="0" class="form-control" value="<?= htmlspecialchars((string)$prefill_amount) ?>" placeholder="0.00" required>
               </div>
               <div class="col-md-6">
-                <label class="form-label fw-semibold">Payment Method (At Clinic)</label>
+                <label class="form-label fw-semibold">Payment Method (Cash / Online)</label>
                 <select name="payment_method" class="form-select">
                   <?php foreach ($method_options as $opt): ?>
                     <option value="<?= htmlspecialchars($opt) ?>" <?= (strcasecmp((string)$prefill_method, $opt) === 0) ? 'selected' : '' ?>>

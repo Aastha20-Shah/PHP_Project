@@ -39,6 +39,23 @@ html, body {
     transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
+/* Compact navbar Appointment button (doesn't affect other buttons) */
+.medikit-appointment-btn.btn-primary,
+.medikit-appointment-group > .btn.btn-primary {
+    padding: 10px 13px;
+    font-size: 0.85rem;
+    line-height: 1.2;
+}
+
+.medikit-appointment-group > .btn.btn-primary.dropdown-toggle-split {
+    padding: 10px 13px;
+}
+
+.medikit-appointment-group .badge {
+    font-size: 0.65rem;
+    padding: 0.25em 0.55em;
+}
+
 .hero-section {
     background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=2070&auto=format&fit=crop') no-repeat center center;
     background-size: cover;

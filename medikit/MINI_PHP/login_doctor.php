@@ -1,37 +1,60 @@
 <?php
 session_start();
 include("config.php");
+include("admin_helpers.php");
+
+medikit_doctor_verification_ensure_schema($conn);
 
 $msg = "";
+$msg_type = "danger";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    $email = mysqli_real_escape_string($conn, $_POST['email']);
-    $password = $_POST['password'];
+    $email = trim((string)($_POST['email'] ?? ''));
+    $password = (string)($_POST['password'] ?? '');
 
-    $query = "SELECT id, firstname, lastname, password 
-              FROM users 
-              WHERE email='$email' AND role_id = 2
-              LIMIT 1";
+    $stmt = $conn->prepare("SELECT id, firstname, lastname, password, verification_status, verification_reason
+                            FROM users
+                            WHERE email = ? AND role_id = 2
+                            LIMIT 1");
 
-    $result = mysqli_query($conn, $query);
+    if (!$stmt) {
+        $msg = "Login failed. Please try again.";
+        $msg_type = "danger";
+    } else {
+        $stmt->bind_param('s', $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $doctor = $result ? $result->fetch_assoc() : null;
+        $stmt->close();
 
-    if ($result && mysqli_num_rows($result) == 1) {
-        $doctor = mysqli_fetch_assoc($result);
+        if ($doctor && isset($doctor['password']) && password_verify($password, (string)$doctor['password'])) {
+            $verification = strtolower(trim((string)($doctor['verification_status'] ?? 'verified')));
 
-        // Verify hashed password
-        if (password_verify($password, $doctor['password'])) {
-
-            $_SESSION['doctor_id'] = $doctor['id'];
-            $_SESSION['doctor_name'] = $doctor['firstname'] . " " . $doctor['lastname'];
-
-            header("Location: doctor_dashboard.php");
-            exit;
+            if ($verification !== 'verified') {
+                if ($verification === 'pending') {
+                    $msg = "Your account is pending admin verification. Please wait for approval.";
+                    $msg_type = "warning";
+                } elseif ($verification === 'rejected') {
+                    $reason = trim((string)($doctor['verification_reason'] ?? ''));
+                    $msg = $reason !== ''
+                        ? "Your account was rejected by admin. Reason: " . $reason
+                        : "Your account was rejected by admin. Please contact support.";
+                    $msg_type = "danger";
+                } else {
+                    $msg = "Your account is not verified yet. Please contact support.";
+                    $msg_type = "warning";
+                }
+            } else {
+                $_SESSION['doctor_id'] = (int)$doctor['id'];
+                $_SESSION['doctor_name'] = trim((string)($doctor['firstname'] ?? '') . ' ' . (string)($doctor['lastname'] ?? ''));
+                header("Location: doctor_dashboard.php");
+                exit;
+            }
         } else {
             $msg = "Invalid Email or Password!";
+            $msg_type = "danger";
         }
-    } else {
-        $msg = "Invalid Email or Password!";
     }
 }
 ?>
@@ -82,8 +105,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             </p>
 
                             <?php if (!empty($msg)): ?>
-                                <div class="alert alert-danger">
-                                    <?php echo $msg; ?>
+                                <div class="alert alert-<?php echo htmlspecialchars($msg_type); ?>">
+                                    <?php echo htmlspecialchars($msg); ?>
                                 </div>
                             <?php endif; ?>
 

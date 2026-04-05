@@ -2,8 +2,11 @@
 session_start();
 include("config.php"); // Your database connection
 include("profile_image_helpers.php");
+include("admin_helpers.php");
+include_once("mailer_helpers.php");
 
 medikit_ensure_profile_image_schema($conn);
+medikit_doctor_verification_ensure_schema($conn);
 
 $is_logged_in = isset($_SESSION['patient_id']);
 $patient_id = $is_logged_in ? $_SESSION['patient_id'] : null;
@@ -33,6 +36,13 @@ if (isset($_POST['book'])) {
         $note = mysqli_real_escape_string($conn, $_POST['note']);
         $appointment_date = mysqli_real_escape_string($conn, $_POST['appointment_date']);
 
+        if (!medikit_doctor_is_verified($conn, $doctor_id_post)) {
+            $_SESSION['message'] = 'This doctor is not verified yet. Please choose another doctor.';
+            $_SESSION['message_type'] = 'warning';
+            header("Location: patient_dashboard.php#find-doctor");
+            exit();
+        }
+
         // Prevent booking past dates/times
         $appointment_date_clean = trim((string)($_POST['appointment_date'] ?? ''));
         $appointment_day_start = strtotime($appointment_date_clean . ' 00:00:00');
@@ -41,7 +51,7 @@ if (isset($_POST['book'])) {
         if ($appointment_day_start === false || $today_start === false || $appointment_day_start < $today_start) {
             $_SESSION['message'] = 'Please choose a current or future date.';
             $_SESSION['message_type'] = 'warning';
-            header("Location: patient_dashboard.php");
+            header("Location: patient_dashboard.php#find-doctor");
             exit();
         }
 
@@ -59,7 +69,7 @@ if (isset($_POST['book'])) {
         if ($slot_start_time === '') {
             $_SESSION['message'] = 'Invalid time slot. Please select again.';
             $_SESSION['message_type'] = 'warning';
-            header("Location: patient_dashboard.php");
+            header("Location: patient_dashboard.php#find-doctor");
             exit();
         }
 
@@ -68,7 +78,7 @@ if (isset($_POST['book'])) {
             if ($slot_start_ts !== false && $slot_start_ts <= time()) {
                 $_SESSION['message'] = 'This time slot is no longer available. Please choose another.';
                 $_SESSION['message_type'] = 'warning';
-                header("Location: patient_dashboard.php");
+                header("Location: patient_dashboard.php#find-doctor");
                 exit();
             }
         }
@@ -88,6 +98,23 @@ if (isset($_POST['book'])) {
             if (mysqli_query($conn, $insert_query)) {
                 $_SESSION['message'] = "Slot booked successfully.";
                 $_SESSION['message_type'] = "success";
+
+                $mail_ok = medikit_send_patient_booking_confirmation_email(
+                    $conn,
+                    (int)$patient_id,
+                    (int)$doctor_id_post,
+                    (string)$appointment_date_clean,
+                    (int)$time_id,
+                    (int)$speciality_id
+                );
+
+                if (defined('MEDIKIT_MAIL_ENABLED') && MEDIKIT_MAIL_ENABLED === true) {
+                    if ($mail_ok) {
+                        $_SESSION['message'] .= " Confirmation email sent.";
+                    } else {
+                        $_SESSION['message'] .= " (Booked, but confirmation email could not be sent.)";
+                    }
+                }
             } else {
                 $_SESSION['message'] = "Error submitting appointment: " . mysqli_error($conn);
                 $_SESSION['message_type'] = "danger";
@@ -96,7 +123,7 @@ if (isset($_POST['book'])) {
     }
 
     // Redirect to prevent form resubmission on refresh
-    header("Location: patient_dashboard.php");
+    header("Location: patient_dashboard.php#find-doctor");
     exit();
 }
 
@@ -118,12 +145,8 @@ if ($is_logged_in && empty($msg)) { // Only run if no other message is set
             if ($status == 'accepted' || $status == 'pending') {
                 $msg = "Your appointment for <strong>$date</strong> is booked.";
                 $msg_type = "success";
-            } elseif ($status == 'rejected') {
-                $msg = "❌ Unfortunately, your recent booking request was rejected. Please try another slot.";
-                $msg_type = "danger";
-            } elseif ($status == 'visited') {
-                $msg = "Thank you for visiting! We hope you had a pleasant experience.";
-                $msg_type = "primary";
+            } elseif ($status == 'rejected' || $status == 'visited') {
+                // Cancel/complete updates are shown via the Appointment notifications dropdown.
             }
         }
         $stmt->close();
@@ -136,7 +159,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !isset($_POST['action']) && !isset($
     $category_id_filter = isset($_POST['category_id_filter']) ? intval($_POST['category_id_filter']) : 0;
     $speciality_id_filter = isset($_POST['speciality_id_filter']) ? intval($_POST['speciality_id_filter']) : 0;
 
-    $where_clauses = [];
+    $where_clauses = [
+        "u.role_id = 2",
+        "u.verification_status = 'verified'",
+    ];
     if (!empty($search_term)) {
         $where_clauses[] = "(u.firstname LIKE '%$search_term%' OR u.lastname LIKE '%$search_term%' OR c.category_name LIKE '%$search_term%' OR s.doctor_speciality LIKE '%$search_term%')";
     }
