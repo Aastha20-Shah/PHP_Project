@@ -9,6 +9,7 @@ require_once __DIR__ . '/../admin_helpers.php';
 medikit_admin_ensure_schema($conn);
 medikit_doctor_verification_ensure_schema($conn);
 medikit_commission_ensure_schema($conn);
+medikit_contact_messages_ensure_schema($conn);
 
 if (!function_exists('admin_is_logged_in')) {
   function admin_is_logged_in(): bool

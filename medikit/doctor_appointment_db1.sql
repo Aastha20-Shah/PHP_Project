@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 05, 2026 at 07:45 PM
+-- Generation Time: Apr 06, 2026 at 08:02 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -92,23 +92,6 @@ CREATE TABLE `clinic_bills` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `clinic_bills`
---
-
-INSERT INTO `clinic_bills` (`id`, `booking_id`, `doctor_id`, `patient_id`, `service_type`, `amount`, `payment_method`, `payment_status`, `created_at`, `updated_at`) VALUES
-(1, 76, 119, 187, 'Consultation', 10000.00, 'Credit Card', 'paid', '2026-04-02 15:53:19', '2026-04-02 15:53:19'),
-(2, 77, 119, 187, 'Consultation', 8000.00, 'Debit Card', 'paid', '2026-04-02 16:33:28', '2026-04-02 16:33:28'),
-(3, 79, 119, 187, 'Consultation', 15000.00, 'Cash', 'paid', '2026-04-02 19:24:11', '2026-04-02 19:41:07'),
-(4, 80, 120, 187, 'Consultation', 500.00, 'UPI', 'paid', '2026-04-03 17:11:15', '2026-04-03 17:11:15'),
-(5, 81, 121, 187, 'Consultation', 14000.00, 'Cash', 'paid', '2026-04-03 18:41:54', '2026-04-03 18:41:54'),
-(6, 82, 120, 187, 'Consultation', 200.00, 'Cash', 'paid', '2026-04-04 07:13:16', '2026-04-04 07:13:16'),
-(7, 83, 120, 187, 'Consultation', 1.00, 'UPI', 'paid', '2026-04-04 16:22:13', '2026-04-04 16:28:39'),
-(8, 84, 120, 187, 'Consultation', 1500.00, 'Online', 'paid', '2026-04-04 17:24:18', '2026-04-05 08:06:53'),
-(9, 85, 119, 188, 'Consultation', 20000.00, 'Cash', 'paid', '2026-04-05 13:41:25', '2026-04-05 13:41:25'),
-(10, 87, 119, 188, 'Consultation', 1500.00, 'Online', 'paid', '2026-04-05 14:03:29', '2026-04-05 16:18:37'),
-(11, 90, 119, 188, 'elfedfm', 600.00, 'Online', 'paid', '2026-04-05 16:36:22', '2026-04-05 16:36:22');
-
 -- --------------------------------------------------------
 
 --
@@ -133,16 +116,6 @@ CREATE TABLE `clinic_bill_payments` (
   `paid_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `clinic_bill_payments`
---
-
-INSERT INTO `clinic_bill_payments` (`id`, `bill_id`, `booking_id`, `doctor_id`, `patient_id`, `gateway`, `amount`, `currency`, `razorpay_order_id`, `razorpay_payment_id`, `razorpay_signature`, `razorpay_method`, `status`, `created_at`, `paid_at`) VALUES
-(1, 7, 83, 120, 187, 'razorpay', 1000.00, 'INR', 'order_SZTrWKJMlPF5UB', NULL, NULL, NULL, 'created', '2026-04-04 16:24:51', NULL),
-(2, 7, 83, 120, 187, 'razorpay', 1.00, 'INR', 'order_SZTukKpvRA9K77', 'pay_SZTvEHKjAfYfZT', '93cca69e25a0a8e13274ba9760ab4835171135cf5aa313c80ce25584d9b3cb46', 'upi', 'paid', '2026-04-04 16:27:54', '2026-04-04 16:28:39'),
-(3, 8, 84, 120, 187, 'razorpay', 1500.00, 'INR', 'order_SZju0ktJmAkK2v', 'pay_SZjuHBWV98FtC2', 'aefb01c56dcba864aea9027c55abfd80d21e56216ef88624f0b792ab4aaa416f', 'upi', 'paid', '2026-04-05 08:06:21', '2026-04-05 08:06:53'),
-(4, 10, 87, 119, 188, 'razorpay', 1500.00, 'INR', 'order_SZsHY7JCzVrKHW', 'pay_SZsHhEzPhxDhYi', '8ca92d7e8aa773be1ff2e29106522cbe03d40a20e93902c2e50b9206d5512829', 'upi', 'paid', '2026-04-05 16:18:12', '2026-04-05 16:18:37');
-
 -- --------------------------------------------------------
 
 --
@@ -165,17 +138,26 @@ CREATE TABLE `clinic_prescriptions` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- --------------------------------------------------------
+
 --
--- Dumping data for table `clinic_prescriptions`
+-- Table structure for table `contact_messages`
 --
 
-INSERT INTO `clinic_prescriptions` (`id`, `booking_id`, `doctor_id`, `patient_id`, `diagnosis`, `medications`, `dosage`, `frequency`, `duration`, `instructions`, `status`, `created_at`, `updated_at`) VALUES
-(1, 82, 120, 187, 'skdfnn', 'kdsfnds', '500', '8', '7', 'LSDFKD', 'active', '2026-04-04 07:12:50', '2026-04-04 07:12:50'),
-(2, 83, 120, 187, 'Danraff', '{\"items\":[{\"medicine\":\"sdnajdj\",\"dosage\":\"300\",\"frequency\":\"1-1-0\",\"duration\":\"12\",\"time\":\"after food\"},{\"medicine\":\"sdlfjdkf\",\"dosage\":\"500\",\"frequency\":\"0-1-1\",\"duration\":\"12\",\"time\":\"before food\"}]}', '', '', '', 'Eat fruit,drink water more', 'active', '2026-04-04 16:20:38', '2026-04-04 16:22:31'),
-(3, 84, 120, 187, 'Dark Spots', '{\"items\":[{\"medicine\":\"ksdfjjfs\",\"dosage\":\"200\",\"frequency\":\"1-0-1\",\"duration\":\"7\",\"time\":\"After food\"},{\"medicine\":\"asddjsk\",\"dosage\":\"500\",\"frequency\":\"1-1-0\",\"duration\":\"5\",\"time\":\"Before food\"}]}', '', '', '', 'lisdjsksfadf', 'active', '2026-04-04 17:24:01', '2026-04-05 08:08:45'),
-(4, 85, 119, 188, 'Bone crack', '{\"items\":[{\"medicine\":\"Cetafill\",\"dosage\":\"500mg\",\"frequency\":\"1-0-1\",\"duration\":\"5\",\"time\":\"After food\"},{\"medicine\":\"Darkoflex\",\"dosage\":\"200mg\",\"frequency\":\"0-1-0\",\"duration\":\"5\",\"time\":\"Before Food\"}]}', '', '', '', 'Eating Food and water', 'active', '2026-04-05 13:40:48', '2026-04-05 13:40:48'),
-(5, 87, 119, 188, 'jerhwj', '{\"items\":[{\"medicine\":\"aklsdfm\",\"dosage\":\"400mg\",\"frequency\":\"1-0-1\",\"duration\":\"7\",\"time\":\"After food\"}]}', '', '', '', 'kjfhudf', 'active', '2026-04-05 14:03:08', '2026-04-05 14:03:08'),
-(6, 90, 119, 188, 'rkrgkm', '{\"items\":[{\"medicine\":\"mdwkdmk\",\"dosage\":\"400\",\"frequency\":\"1-0-1\",\"duration\":\"5\",\"time\":\"After food\"}]}', '', '', '', 'hewfhdg', 'active', '2026-04-05 16:35:59', '2026-04-05 16:35:59');
+CREATE TABLE `contact_messages` (
+  `id` int(11) NOT NULL,
+  `name` varchar(150) NOT NULL,
+  `email` varchar(190) NOT NULL,
+  `message` text NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `contact_messages`
+--
+
+INSERT INTO `contact_messages` (`id`, `name`, `email`, `message`, `created_at`) VALUES
+(3, 'Aastha', 'ashah464@rku.ac.in', 'dkslnsjns', '2026-04-06 17:04:06');
 
 -- --------------------------------------------------------
 
@@ -310,22 +292,7 @@ INSERT INTO `doctor_available_day` (`id`, `doctor_id`, `day`, `created_at`, `upd
 (115, 49, 4, '2025-10-02 05:38:03', '2025-10-02 05:38:03'),
 (116, 49, 6, '2025-10-02 05:38:03', '2025-10-02 05:38:03'),
 (117, 50, 3, '2025-10-02 05:38:03', '2025-10-02 05:38:03'),
-(118, 50, 7, '2025-10-02 05:38:03', '2025-10-02 05:38:03'),
-(119, 119, 2, '2026-04-01 18:55:55', '2026-04-01 18:55:55'),
-(120, 119, 3, '2026-04-01 18:55:55', '2026-04-01 18:55:55'),
-(121, 119, 4, '2026-04-01 18:55:55', '2026-04-01 18:55:55'),
-(122, 119, 5, '2026-04-02 12:22:57', '2026-04-02 12:22:57'),
-(123, 119, 1, '2026-04-02 12:55:20', '2026-04-02 12:55:20'),
-(124, 119, 6, '2026-04-02 12:55:20', '2026-04-02 12:55:20'),
-(125, 120, 1, '2026-04-03 17:08:58', '2026-04-03 17:08:58'),
-(126, 120, 2, '2026-04-03 17:08:58', '2026-04-03 17:08:58'),
-(127, 120, 3, '2026-04-03 17:08:58', '2026-04-03 17:08:58'),
-(128, 120, 4, '2026-04-03 17:08:58', '2026-04-03 17:08:58'),
-(129, 120, 5, '2026-04-03 17:08:58', '2026-04-03 17:08:58'),
-(130, 120, 6, '2026-04-03 17:08:58', '2026-04-03 17:08:58'),
-(131, 121, 4, '2026-04-03 18:39:37', '2026-04-03 18:39:37'),
-(132, 121, 5, '2026-04-03 18:39:37', '2026-04-03 18:39:37'),
-(133, 121, 6, '2026-04-03 18:39:37', '2026-04-03 18:39:37');
+(118, 50, 7, '2025-10-02 05:38:03', '2025-10-02 05:38:03');
 
 -- --------------------------------------------------------
 
@@ -447,11 +414,6 @@ INSERT INTO `doctor_available_time` (`id`, `day_id`, `start_time`, `end_time`, `
 (98, 47, '12:30:00', '14:30:00', '2025-10-02 05:38:03', '2025-10-02 05:38:03'),
 (99, 48, '08:30:00', '10:30:00', '2025-10-02 05:38:03', '2025-10-02 05:38:03'),
 (100, 48, '13:00:00', '15:00:00', '2025-10-02 05:38:03', '2025-10-02 05:38:03'),
-(290, 134, '10:00:00', '12:00:00', '2025-10-07 10:06:02', '2025-10-07 10:06:02'),
-(291, 135, '10:00:00', '12:00:00', '2025-10-07 10:06:02', '2025-10-07 10:06:02'),
-(292, 136, '10:00:00', '12:00:00', '2025-10-07 10:06:02', '2025-10-07 10:06:02'),
-(293, 137, '10:00:00', '12:00:00', '2025-10-07 10:06:02', '2025-10-07 10:06:02'),
-(294, 138, '10:00:00', '12:00:00', '2025-10-07 10:06:02', '2025-10-07 10:06:02'),
 (296, 119, '10:00:00', '12:00:00', '2026-04-01 18:55:55', '2026-04-01 18:55:55'),
 (297, 120, '10:00:00', '12:00:00', '2026-04-01 18:55:55', '2026-04-01 18:55:55'),
 (298, 121, '10:00:00', '12:00:00', '2026-04-01 18:55:55', '2026-04-01 18:55:55'),
@@ -508,23 +470,6 @@ CREATE TABLE `doctor_commissions` (
   `paid_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `doctor_commissions`
---
-
-INSERT INTO `doctor_commissions` (`id`, `booking_id`, `bill_id`, `doctor_id`, `patient_id`, `amount`, `commission_percent`, `commission_amount`, `status`, `created_at`, `updated_at`, `paid_at`) VALUES
-(1, 81, 5, 121, 187, 14000.00, 5.00, 700.00, 'due', '2026-04-03 18:41:54', '2026-04-05 17:07:49', NULL),
-(2, 82, 6, 120, 187, 200.00, 5.00, 10.00, 'due', '2026-04-04 07:13:16', '2026-04-05 17:07:49', NULL),
-(3, 83, 7, 120, 187, 1.00, 5.00, 0.05, 'due', '2026-04-04 16:22:13', '2026-04-05 17:07:49', NULL),
-(5, 84, 8, 120, 187, 1500.00, 5.00, 75.00, 'due', '2026-04-04 17:24:18', '2026-04-05 17:07:49', NULL),
-(6, 85, 9, 119, 188, 20000.00, 10.00, 2000.00, 'paid', '2026-04-05 13:41:25', '2026-04-05 16:15:31', '2026-04-05 16:15:31'),
-(7, 87, 10, 119, 188, 1500.00, 10.00, 150.00, 'paid', '2026-04-05 14:03:29', '2026-04-05 16:20:10', '2026-04-05 16:20:10'),
-(9, 90, 11, 119, 188, 600.00, 10.00, 60.00, 'due', '2026-04-05 16:36:22', '2026-04-05 16:36:22', NULL),
-(10, 76, 1, 119, 187, 10000.00, 5.00, 500.00, 'due', '2026-04-05 17:41:30', '2026-04-05 17:41:30', NULL),
-(11, 77, 2, 119, 187, 8000.00, 5.00, 400.00, 'due', '2026-04-05 17:41:30', '2026-04-05 17:41:30', NULL),
-(12, 79, 3, 119, 187, 15000.00, 5.00, 750.00, 'due', '2026-04-05 17:41:30', '2026-04-05 17:41:30', NULL),
-(13, 80, 4, 120, 187, 500.00, 5.00, 25.00, 'due', '2026-04-05 17:41:30', '2026-04-05 17:41:30', NULL);
-
 -- --------------------------------------------------------
 
 --
@@ -548,15 +493,6 @@ CREATE TABLE `doctor_commission_payments` (
   `paid_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `doctor_commission_payments`
---
-
-INSERT INTO `doctor_commission_payments` (`id`, `doctor_id`, `gateway`, `amount`, `currency`, `razorpay_order_id`, `razorpay_payment_id`, `razorpay_signature`, `razorpay_method`, `status`, `snapshot_count`, `created_at`, `updated_at`, `paid_at`) VALUES
-(1, 119, 'razorpay', 2000.00, 'INR', 'order_SZsE9oC0SMmpmb', 'pay_SZsEQdFgYlz0F3', '9cb52b69f803dd35e477fc70e499f11a290801b22a1b508b22a8ce1500dc1ee6', 'upi', 'paid', 1, '2026-04-05 16:14:59', '2026-04-05 16:15:31', '2026-04-05 16:15:31'),
-(2, 119, 'razorpay', 150.00, 'INR', 'order_SZsJBrP68Dnr5a', 'pay_SZsJLftWXmOguX', 'd9d95e94d1793f4959683e3e64fd49cb1271b5d78aaf7a0c37d3fd65fb99ed82', 'upi', 'paid', 1, '2026-04-05 16:19:45', '2026-04-05 16:20:10', '2026-04-05 16:20:10'),
-(3, 119, 'razorpay', 60.00, 'INR', 'order_SZsbNVG8oyDR9h', NULL, NULL, NULL, 'created', 1, '2026-04-05 16:36:58', '2026-04-05 16:36:58', NULL);
-
 -- --------------------------------------------------------
 
 --
@@ -570,15 +506,6 @@ CREATE TABLE `doctor_commission_payment_items` (
   `commission_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `doctor_commission_payment_items`
---
-
-INSERT INTO `doctor_commission_payment_items` (`id`, `payment_id`, `commission_id`, `commission_amount`, `created_at`) VALUES
-(1, 1, 6, 2000.00, '2026-04-05 16:14:59'),
-(2, 2, 7, 150.00, '2026-04-05 16:19:45'),
-(3, 3, 9, 60.00, '2026-04-05 16:36:58');
 
 -- --------------------------------------------------------
 
@@ -702,13 +629,7 @@ INSERT INTO `doctor_speciality` (`id`, `doctor_id`, `speciality_id`, `created_at
 (117, 116, 3, '2026-02-18 15:08:17', '2026-02-18 15:08:17'),
 (118, 116, 4, '2026-02-18 15:08:17', '2026-02-18 15:08:17'),
 (119, 117, 3, '2026-02-27 06:43:20', '2026-02-27 06:43:20'),
-(120, 117, 4, '2026-02-27 06:43:20', '2026-02-27 06:43:20'),
-(121, 118, 7, '2026-03-24 17:20:39', '2026-03-24 17:20:39'),
-(122, 119, 5, '2026-04-01 18:54:20', '2026-04-01 18:54:20'),
-(123, 120, 8, '2026-04-02 16:17:33', '2026-04-02 16:17:33'),
-(124, 120, 7, '2026-04-02 16:17:33', '2026-04-02 16:17:33'),
-(125, 121, 1, '2026-04-03 18:36:23', '2026-04-03 18:36:23'),
-(126, 122, 4, '2026-04-05 15:41:10', '2026-04-05 15:41:10');
+(120, 117, 4, '2026-02-27 06:43:20', '2026-02-27 06:43:20');
 
 -- --------------------------------------------------------
 
@@ -919,9 +840,7 @@ INSERT INTO `patient` (`id`, `firstname`, `lastname`, `phone_number`, `email`, `
 (182, 'Diya', 'Gupta', 9123456200, NULL, NULL, '1989-01-17', 'Female', 'Ahmedabad', '2025-10-02 05:38:03', '2025-10-02 05:38:03'),
 (184, 'Mock', 'Patient', 1234567890, NULL, NULL, '1990-01-01', 'Male', 'Rajkot', '2026-04-01 14:26:01', '2026-04-01 14:26:01'),
 (185, 'Mock', 'Two', 987654321, 'mockpatient2@test.com', '$2y$10$IdaY1Py.j.kM1wPNs34qBe/HX/aLuuMACvM./v8OoY4yk6K5KsdHa', '1989-01-01', 'Male', 'Rajkot', '2026-04-01 14:44:20', '2026-04-01 14:44:20'),
-(186, 'Random', 'User', 9988776655, 'randomuser9988@gmail.com', '$2y$10$OfZNeR0/ImAhBJzU9uvygea883Mdti.uITfqsAW0FM3X2K5s6Mimy', '1990-01-01', 'Male', '789 Random Road', '2026-04-01 16:19:27', '2026-04-01 16:19:27'),
-(187, 'Aastha', 'Shah', 9313252046, 'admin@gmail.com', '$2y$10$SGo6GjJv7yDNBGEvLPXcPO9cYvMRYkKdVk98WJbMvswjIE7mkIpAK', '2017-06-05', 'Female', 'Samrajya Appt,Kalawad Road,Rajkot', '2026-04-01 18:42:33', '2026-04-01 18:42:33'),
-(188, 'Aastha', 'Shah', 9898989898, 'shahaastha2024@gmail.com', '$2y$10$lj1/3ZY6KRxwklyKGQK0lexVJ3aSdQIy/1S2SwHZk61zriDYOFug6', '2005-09-20', 'Female', 'Kalawad Road, Rajkot', '2026-04-05 07:42:44', '2026-04-05 07:42:44');
+(186, 'Random', 'User', 9988776655, 'randomuser9988@gmail.com', '$2y$10$OfZNeR0/ImAhBJzU9uvygea883Mdti.uITfqsAW0FM3X2K5s6Mimy', '1990-01-01', 'Male', '789 Random Road', '2026-04-01 16:19:27', '2026-04-01 16:19:27');
 
 -- --------------------------------------------------------
 
@@ -1128,12 +1047,7 @@ INSERT INTO `users` (`id`, `firstname`, `lastname`, `phone_number`, `date_of_bir
 (93, 'Arjun', 'Malhotra', 9123456797, '1980-08-09', '', 'Male', 'Surat', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
 (94, 'Naina', 'Gupta', 9234567899, '1986-11-02', '', 'Female', 'Vadodara', NULL, 0, NULL, NULL, '', 2, 11, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
 (95, 'Aryan', 'Malani', 9345678910, '1979-01-12', '', 'Male', 'Bhavnagar', NULL, 0, NULL, NULL, '', 2, 12, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
-(96, 'Diya', 'Nair', 9456789021, '1985-04-18', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 12, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
-(118, 'Aastha', 'Shah', 9313252046, '1989-09-20', 'shahaastha2024@gmail.com', 'Female', 'Kalawad Road, Rajkot', NULL, 0, NULL, NULL, '$2y$10$rgx7gsLbP.w1.sCmYtlixeSo4NnqXyTBMljMVozq9s0/HbqM0PzVq', 2, 4, '2026-03-24 17:17:52', '2026-04-02 16:14:08', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
-(119, 'Aastha', 'Shah', 9898706474, '1994-01-18', 'admin@test.com', 'Female', 'Samrajya Appt,Kalawad Road,Rajkot', 'Giriraj Hospital', 5, 'MBBS, MD', 'klwmefksfmsk', '$2y$10$DbDMtO.tNVlTv36qFlRHauRJo72ZuV6ujuDo7bMGhIe/DELhWwYeK', 2, 3, '2026-04-01 18:52:16', '2026-04-02 18:51:39', 'uploads/doctors/doctor_119_20260402_205139_e4f890c02f7f.jpg', NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
-(120, 'Krisha ', 'Maru', 9898706474, '1987-06-02', 'Krishamaru24@gmail.com', 'Female', 'Samrajya Appt,Kalawad Road,Rajkot', 'Wockhardt', 10, 'MBBS', 'skdfjsidfjifjidg', '$2y$10$niDTPp0kejorC9R3Nda5Cuh1T.XbO6WYR872O8atIKG7y6wFAlPLO', 2, 4, '2026-04-02 16:15:53', '2026-04-04 17:10:48', 'uploads/doctors/doctor_120_20260404_191048_a6e31be692fc.jpg', NULL, NULL, 'verified', NULL, NULL, NULL, 10.00),
-(121, 'Aastha', 'Shah', 9601927950, '1970-06-09', 'ashah464@rku.ac.in', 'Female', 'Samrajya Appt,Kalawad Road,Rajkot', 'Wockhardt', 4, 'MBBS, MD', 'wdsfsfg', '$2y$10$O/WnfeKI.jsoEYAbE.XZXe/lG9tvdHZzNTlBbgpnfGa681ihx/ZUi', 2, 1, '2026-04-03 18:34:59', '2026-04-03 18:36:50', NULL, 'MD067370Y', 'uploads/licenses/license_doctor_121_20260403_203459_3e2eacab0958.jpg', 'verified', NULL, '2026-04-03 18:36:50', 1, 10.00),
-(122, 'Riya', 'Shah', 9898706474, '1972-06-06', 'Riya24@gmail.com', 'Female', '9 square,Nana Muva  road, Rajkot', 'Sterling', 8, 'MBBS, MD', 'erkjtiewkrmledf', '$2y$10$5hHCUgIKJyNux3uMAb8CzOFtE1DSM2GdS74Lt7p9sMXQQXyS517mS', 2, 2, '2026-04-05 15:36:39', '2026-04-05 15:49:17', NULL, 'MD067376Z', 'uploads/licenses/license_doctor_122_20260405_210640_785bad6c0851.png', 'verified', NULL, '2026-04-05 15:39:56', 1, 2.00);
+(96, 'Diya', 'Nair', 9456789021, '1985-04-18', '', 'Female', 'Jamnagar', NULL, 0, NULL, NULL, '', 2, 12, '2025-10-02 05:38:03', '2025-10-02 05:38:03', NULL, NULL, NULL, 'verified', NULL, NULL, NULL, 10.00);
 
 -- --------------------------------------------------------
 
@@ -1223,24 +1137,7 @@ INSERT INTO `visit_booking` (`id`, `patient_id`, `doctor_id`, `speciality_id`, `
 (71, 183, 109, 17, 293, '', 1, '2025-10-07 13:00:31', '2026-04-02 19:21:59', '2025-10-16', 'visited', 0, 1, NULL, NULL),
 (72, 183, 109, 17, 293, '', 1, '2025-10-07 13:56:43', '2026-04-02 19:21:59', '2025-10-23', 'visited', 0, 1, NULL, NULL),
 (73, 183, 109, 17, 292, '', 1, '2025-10-07 16:11:19', '2026-04-02 19:21:59', '2025-10-29', 'visited', 0, 1, NULL, NULL),
-(74, 185, 1, 2, 4, 'Checkup', 0, '2026-04-01 14:45:49', '2026-04-02 19:21:59', '2026-04-08', 'accepted', 0, 1, NULL, NULL),
-(75, 187, 119, 5, 297, '', 1, '2026-04-01 18:57:22', '2026-04-02 19:21:59', '2026-04-01', 'visited', 1, 1, NULL, NULL),
-(76, 187, 119, 5, 302, 'Check Up', 1, '2026-04-02 15:46:09', '2026-04-02 19:21:59', '2026-04-03', 'visited', 1, 1, NULL, NULL),
-(77, 187, 119, 5, 303, 'break in bone', 1, '2026-04-02 16:31:52', '2026-04-02 19:21:59', '2026-04-04', 'visited', 1, 1, NULL, NULL),
-(78, 187, 119, 5, 299, '', 0, '2026-04-02 19:01:00', '2026-04-02 19:21:59', '2026-04-03', 'rejected', 1, 1, NULL, NULL),
-(79, 187, 119, 5, 299, '', 1, '2026-04-02 19:22:37', '2026-04-02 19:40:46', '2026-04-03', 'visited', 1, 1, NULL, NULL),
-(80, 187, 120, 7, 309, 'Hairfall', 1, '2026-04-03 17:09:56', '2026-04-03 17:46:51', '2026-04-04', 'visited', 1, 0, NULL, NULL),
-(81, 187, 121, 1, 312, '', 1, '2026-04-03 18:40:59', '2026-04-04 15:39:17', '2026-04-04', 'visited', 1, 0, NULL, NULL),
-(82, 187, 120, 8, 304, '', 1, '2026-04-04 07:09:44', '2026-04-04 15:39:17', '2026-04-06', 'visited', 1, 0, NULL, NULL),
-(83, 187, 120, 8, 305, 'Danruff', 1, '2026-04-04 16:16:58', '2026-04-04 17:25:05', '2026-04-07', 'visited', 1, 0, NULL, NULL),
-(84, 187, 120, 7, 306, 'Dark Spots', 1, '2026-04-04 17:21:58', '2026-04-04 17:25:05', '2026-04-08', 'visited', 1, 0, NULL, NULL),
-(85, 188, 119, 5, 300, 'Regular check up', 1, '2026-04-05 07:43:35', '2026-04-05 13:41:34', '2026-04-06', 'visited', 0, 0, '2026-04-05 14:10:58', '2026-04-05 19:11:34'),
-(86, 188, 120, 8, 313, 'Hairfall', 0, '2026-04-05 09:21:47', '2026-04-05 09:36:20', '2026-04-06', 'accepted', 1, 0, '2026-04-05 15:06:20', NULL),
-(87, 188, 119, 5, 316, '', 1, '2026-04-05 10:13:28', '2026-04-05 14:03:38', '2026-04-06', 'visited', 0, 0, '2026-04-05 16:10:25', '2026-04-05 19:33:38'),
-(88, 188, 120, 7, 320, 'Red marks', 0, '2026-04-05 10:44:42', '2026-04-05 10:57:01', '2026-04-06', 'accepted', 1, 0, '2026-04-05 16:27:01', NULL),
-(89, 188, 120, 8, 323, '', 0, '2026-04-05 10:48:22', '2026-04-05 10:56:55', '2026-04-06', 'accepted', 1, 0, '2026-04-05 16:26:55', NULL),
-(90, 188, 119, 5, 326, '', 1, '2026-04-05 11:07:18', '2026-04-05 16:36:32', '2026-04-06', 'visited', 0, 0, '2026-04-05 16:49:15', '2026-04-05 22:06:32'),
-(91, 188, 119, 5, 328, '', 0, '2026-04-05 12:44:51', '2026-04-05 12:50:33', '2026-04-06', 'accepted', 1, 0, '2026-04-05 18:20:33', NULL);
+(74, 185, 1, 2, 4, 'Checkup', 0, '2026-04-01 14:45:49', '2026-04-02 19:21:59', '2026-04-08', 'accepted', 0, 1, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -1286,6 +1183,13 @@ ALTER TABLE `clinic_prescriptions`
   ADD UNIQUE KEY `uniq_booking` (`booking_id`),
   ADD KEY `idx_doctor` (`doctor_id`),
   ADD KEY `idx_patient` (`patient_id`);
+
+--
+-- Indexes for table `contact_messages`
+--
+ALTER TABLE `contact_messages`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_created_at` (`created_at`);
 
 --
 -- Indexes for table `doctor_available_day`
@@ -1395,37 +1299,43 @@ ALTER TABLE `category`
 -- AUTO_INCREMENT for table `clinic_bills`
 --
 ALTER TABLE `clinic_bills`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `clinic_bill_payments`
 --
 ALTER TABLE `clinic_bill_payments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `clinic_prescriptions`
 --
 ALTER TABLE `clinic_prescriptions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `contact_messages`
+--
+ALTER TABLE `contact_messages`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `doctor_available_day`
 --
 ALTER TABLE `doctor_available_day`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=134;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=145;
 
 --
 -- AUTO_INCREMENT for table `doctor_available_time`
 --
 ALTER TABLE `doctor_available_time`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=330;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=343;
 
 --
 -- AUTO_INCREMENT for table `doctor_commissions`
 --
 ALTER TABLE `doctor_commissions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
 
 --
 -- AUTO_INCREMENT for table `doctor_commission_payments`
@@ -1443,13 +1353,13 @@ ALTER TABLE `doctor_commission_payment_items`
 -- AUTO_INCREMENT for table `doctor_speciality`
 --
 ALTER TABLE `doctor_speciality`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=127;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=130;
 
 --
 -- AUTO_INCREMENT for table `patient`
 --
 ALTER TABLE `patient`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=189;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=190;
 
 --
 -- AUTO_INCREMENT for table `roles`
@@ -1467,13 +1377,13 @@ ALTER TABLE `speciality`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=123;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=125;
 
 --
 -- AUTO_INCREMENT for table `visit_booking`
 --
 ALTER TABLE `visit_booking`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=92;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=95;
 
 --
 -- Constraints for dumped tables

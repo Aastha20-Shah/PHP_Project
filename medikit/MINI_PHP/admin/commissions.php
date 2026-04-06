@@ -105,6 +105,7 @@ $css_v = (int)@filemtime(__DIR__ . '/../custom_style.css');
           <li class="nav-item"><a class="nav-link" href="patients.php">Patients</a></li>
           <li class="nav-item"><a class="nav-link" href="verify_doctors.php">Verify Doctors</a></li>
           <li class="nav-item"><a class="nav-link active" href="commissions.php">Commissions</a></li>
+          <li class="nav-item"><a class="nav-link" href="contact_messages.php">Messages</a></li>
           <li class="nav-item"><a class="nav-link" href="admin_users.php">Admins</a></li>
         </ul>
         <div class="d-flex align-items-center gap-3">

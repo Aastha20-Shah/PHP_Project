@@ -162,6 +162,23 @@ if (!function_exists('medikit_commission_payments_ensure_schema')) {
   }
 }
 
+if (!function_exists('medikit_contact_messages_ensure_schema')) {
+  function medikit_contact_messages_ensure_schema(mysqli $conn): void
+  {
+    $sql = "CREATE TABLE IF NOT EXISTS `contact_messages` (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `name` VARCHAR(150) NOT NULL,
+            `email` VARCHAR(190) NOT NULL,
+            `message` TEXT NOT NULL,
+            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            KEY `idx_created_at` (`created_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+
+    $conn->query($sql);
+  }
+}
+
 if (!function_exists('medikit_license_upload')) {
   function medikit_license_upload(mysqli $conn, int $doctorId, array $file): array
   {
